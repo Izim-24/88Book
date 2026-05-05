@@ -1,300 +1,187 @@
-# 📚 Book Selling Website - Full Stack
+# Book Selling Website - Fullstack
 
-A complete **full-stack e-commerce platform** for buying and selling books online.
+Du an website ban sach gom 3 thanh phan chinh: `frontend` (giao dien), `backend` (API + business logic), va `database` (luu tru du lieu).
 
-## 🎯 Features
+## 1) Tong quan kien truc
 
-### For Buyers
+- `frontend` (React + Vite) goi REST API toi `backend`.
+- `backend` (Express + PostgreSQL) xu ly xac thuc, phan quyen, gio hang, don hang, quan ly sach.
+- `database` (PostgreSQL) luu users, books, cart, orders va order_items.
+- Xac thuc su dung JWT: token duoc luu o frontend (`localStorage`) va gui qua header `Authorization: Bearer <token>`.
 
-- ✅ Browse books with search, filtering, and sorting
-- ✅ View detailed book information
-- ✅ Secure user registration and login
-- ✅ Shopping cart management
-- ✅ Checkout process with address input
-- ✅ Order history and tracking
-- ✅ Wishlist management
+## 2) Frontend
 
-### For Sellers
+### Cong nghe dang dung
 
-- ✅ Register as seller
-- ✅ Add, edit, and delete books
-- ✅ Manage inventory
-- ✅ View sales and orders
-- ✅ Update order status
-- ✅ Track revenue and statistics
+- `React 18` cho UI component.
+- `Vite` cho dev server/build nhanh.
+- `Tailwind CSS` + bo component UI (Radix UI, MUI) cho style.
+- `Context API` cho global state:
+  - `AuthContext` quan ly dang nhap/dang ky/dang xuat.
+  - `CartContext` dong bo du lieu gio hang.
 
-### Admin Features
+### Cac khu vuc chuc nang chinh
 
-- ✅ User management
-- ✅ Order management
-- ✅ Book category management
-- ✅ Analytics and reports
+- **Trang chu + danh muc sach**
+  - Hien thi sach noi bat, category pho bien.
+  - Chuyen nhanh sang trang browse theo category.
+- **Browse**
+  - Tim kiem theo ten/tac gia.
+  - Loc theo category.
+  - Sap xep theo tieu de, gia, rating.
+- **Chi tiet sach**
+  - Mo modal xem mo ta, gia, thong tin sach.
+  - Them vao gio hang.
+- **Gio hang**
+  - Xem danh sach item da them.
+  - Tang/giam so luong, xoa item.
+- **Checkout**
+  - Nhap thong tin lien he, dia chi, thanh toan.
+  - Goi API tao don hang.
+- **Account**
+  - Dang ky, dang nhap, dang xuat.
+  - Hien thi profile va cac thong tin tai khoan.
+- **Seller dashboard**
+  - Them/sua/xoa sach.
+  - Xem danh sach sach cua seller.
 
-## 🏗️ Tech Stack
+### API client tren frontend
+
+File `src/api/client.js` dong vai tro wrapper cho toan bo request:
+
+- Tu dong gan token JWT vao header neu da dang nhap.
+- Nhom API theo module:
+  - `authAPI`: register, login, me.
+  - `booksAPI`: CRUD sach + filter/pagination.
+  - `cartAPI`: CRUD gio hang.
+  - `ordersAPI`: tao don, lay don, huy don, endpoint admin.
+  - `sellerAPI`: sach/don/thong ke cua seller.
+  - `usersAPI`: profile user.
+
+## 3) Backend
+
+### Cong nghe dang dung
+
+- `Node.js` + `Express`.
+- `pg` ket noi PostgreSQL.
+- `jsonwebtoken` + `bcryptjs` cho auth.
+- `cors`, `dotenv`, `express-validator`.
+
+### Cau truc backend
+
+- `backend/server.js`: khoi tao app, middleware, mount routes, error handling.
+- `backend/routes/*.js`: dinh nghia endpoint.
+- `backend/controllers/*.js`: xu ly nghiep vu.
+- `backend/middleware/auth.js`: `authenticateToken` va `authorizeRole`.
+- `backend/config/database.js`: pool ket noi DB.
+
+### Chuc nang backend theo module
+
+- **Auth**
+  - Dang ky tai khoan (`buyer` mac dinh).
+  - Dang nhap, cap JWT.
+  - Lay thong tin user hien tai (`/auth/me`).
+  - Admin co the tao tai khoan admin khac (`/auth/admin`).
+- **Books**
+  - Lay danh sach sach (co filter/search/sort/pagination).
+  - Xem chi tiet sach.
+  - Seller tao/sua/xoa sach cua minh.
+- **Cart**
+  - Them sach vao gio.
+  - Cap nhat so luong.
+  - Xoa item / xoa toan bo gio hang.
+- **Orders**
+  - Tao don tu gio hang.
+  - Lay danh sach don cua user.
+  - Xem chi tiet don.
+  - Huy don.
+  - Admin duyet/cap nhat trang thai don.
+- **Seller**
+  - Lay sach cua seller.
+  - Lay don lien quan seller.
+  - Lay thong ke (so sach, ton kho, doanh thu, don hang).
+  - Cap nhat trang thai don o scope seller.
+- **Users**
+  - Lay/cap nhat profile.
+  - Doi mat khau.
+  - Lay public profile theo user id.
+
+## 4) Database
+
+### He quan tri
+
+- `PostgreSQL`.
+
+### Migration/schema hien tai
+
+- Tao bang chinh: `database/migrations/run.js`.
+- Them cot rating cho books: `database/migrations/add-rating-column.js`.
+
+### Cac bang va y nghia
+
+- `users`
+  - Luu tai khoan, role (`buyer`/`seller`/`admin`), thong tin dang nhap.
+- `books`
+  - Luu catalog sach, thong tin gia, ton kho, seller so huu, rating.
+- `cart_items`
+  - Luu gio hang theo tung user.
+- `orders`
+  - Header don hang: tong tien, dia chi giao, phuong thuc thanh toan, trang thai.
+- `order_items`
+  - Chi tiet tung dong hang trong don, so luong, gia chot tai thoi diem dat.
+
+### Quan he du lieu
+
+- `users (1) -> (n) books` qua `seller_id`.
+- `users (1) -> (n) cart_items` qua `user_id`.
+- `users (1) -> (n) orders` qua `user_id`.
+- `orders (1) -> (n) order_items` qua `order_id`.
+- `books (1) -> (n) cart_items / order_items` qua `book_id`.
+
+## 5) Luong nghiep vu chinh
+
+### Mua sach
+
+1. User dang ky/dang nhap.
+2. Frontend goi `GET /api/books` de browse.
+3. User them sach vao gio (`POST /api/cart`).
+4. Checkout goi `POST /api/orders`.
+5. Backend tao order + order_items, cap nhat ton kho, clear cart.
+
+### Quan ly ban hang (seller)
+
+1. Seller dang nhap.
+2. Tao/sua/xoa sach qua `POST/PUT/DELETE /api/books/:id`.
+3. Theo doi don qua `GET /api/seller/orders`.
+4. Cap nhat trang thai don qua `PUT /api/seller/orders/:orderId/status`.
+
+## 6) Chay du an local
 
 ### Frontend
 
-- **React 18** with TypeScript
-- **Vite** for fast development
-- **Tailwind CSS** for styling
-- **Radix UI** for accessible components
-- **Context API** for state management
-
-### Backend
-
-- **Node.js** with Express.js
-- **PostgreSQL** for data persistence
-- **JWT** for authentication
-- **bcryptjs** for password hashing
-
-### DevOps
-
-- **Docker** for containerization
-- **Docker Compose** for service orchestration
-
-## 📋 Prerequisites
-
-- Node.js v16+
-- PostgreSQL 12+ (or Docker)
-- npm or yarn
-- Git (optional)
-
-## 🚀 Quick Start
-
-### Option 1: Using Docker (Recommended)
-
 ```bash
-# Install Docker & Docker Compose
-
-# Start both backend and database
-docker-compose up -d
-
-# In another terminal, start frontend
-cd "Book Selling Website"
 npm install
 npm run dev
 ```
 
-Open http://localhost:5173
-
-### Option 2: Manual Setup
-
-See [QUICK_START.md](./QUICK_START.md) for detailed instructions.
-
-## 📁 Project Structure
-
-```
-Book Selling Website/
-├── src/
-│   ├── api/          # API client & endpoints
-│   ├── contexts/     # State management contexts
-│   ├── app/          # React components
-│   └── styles/       # CSS & Tailwind config
-└── package.json
-
-backend/
-├── config/           # Database configuration
-├── controllers/      # Business logic
-├── middleware/       # Auth & validation
-├── routes/           # API endpoints
-├── migrations/       # Database setup
-└── server.js         # Express entry point
-```
-
-## 🔐 Authentication
-
-- Users can register as **Buyer** or **Seller**
-- JWT tokens stored in localStorage
-- Protected routes for authenticated users
-- Role-based access control (RBAC)
-
-## 📚 Database Schema
-
-### Users Table
-
-- id, email, password, full_name, role, created_at, updated_at
-
-### Books Table
-
-- id, title, author, description, price, category, isbn, quantity, image_url, seller_id, created_at, updated_at
-
-### Cart Items Table
-
-- id, user_id, book_id, quantity, created_at
-
-### Orders Table
-
-- id, user_id, total_amount, status, shipping_address, payment_method, created_at, updated_at
-
-### Order Items Table
-
-- id, order_id, book_id, seller_id, quantity, price, created_at
-
-## 🔌 API Endpoints
-
-### Authentication
-
-```
-POST   /api/auth/register      - Register new user
-POST   /api/auth/login         - Login user
-GET    /api/auth/me           - Get current user
-```
-
-### Books
-
-```
-GET    /api/books              - List all books (with filters)
-GET    /api/books/:id         - Get book details
-POST   /api/books             - Create book (seller only)
-PUT    /api/books/:id         - Update book (seller only)
-DELETE /api/books/:id         - Delete book (seller only)
-```
-
-### Shopping Cart
-
-```
-GET    /api/cart              - Get user cart
-POST   /api/cart              - Add item to cart
-PUT    /api/cart/:id          - Update cart item
-DELETE /api/cart/:id          - Remove from cart
-DELETE /api/cart              - Clear cart
-```
-
-### Orders
-
-```
-POST   /api/orders            - Create order
-GET    /api/orders            - List user orders
-GET    /api/orders/:id        - Get order details
-PUT    /api/orders/:id/cancel - Cancel order
-```
-
-### Seller API
-
-```
-GET    /api/seller/books      - Seller's books
-GET    /api/seller/orders     - Seller's orders
-GET    /api/seller/stats      - Seller statistics
-PUT    /api/seller/orders/:id/status - Update order status
-```
-
-### User Account
-
-```
-GET    /api/users/profile     - Get user profile
-PUT    /api/users/profile     - Update profile
-PUT    /api/users/change-password - Change password
-GET    /api/users/public/:id  - Get public user info
-```
-
-## 🧪 Testing
-
-### Using cURL
-
-**Register:**
+### Backend
 
 ```bash
-curl -X POST http://localhost:5000/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "user@example.com",
-    "password": "password123",
-    "fullName": "John Doe",
-    "role": "buyer"
-  }'
-```
-
-**Login:**
-
-```bash
-curl -X POST http://localhost:5000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "user@example.com",
-    "password": "password123"
-  }'
-```
-
-**Get Books:**
-
-```bash
-curl "http://localhost:5000/api/books?page=1&limit=20&search=harry&category=fiction"
-```
-
-**Add to Cart (with JWT token):**
-
-```bash
-curl -X POST http://localhost:5000/api/cart \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <JWT_TOKEN>" \
-  -d '{"bookId": 1, "quantity": 2}'
-```
-
-## 📖 Documentation
-
-- [QUICK_START.md](./QUICK_START.md) - Quick setup guide
-- [SETUP_GUIDE.md](./SETUP_GUIDE.md) - Detailed setup instructions
-- [backend/README.md](./backend/README.md) - Backend API documentation
-
-## 🐛 Troubleshooting
-
-### Port Already in Use
-
-```bash
-# Find process using port
-lsof -i :5000  # macOS/Linux
-netstat -ano | findstr :5000  # Windows
-
-# Kill process
-kill -9 <PID>  # macOS/Linux
-taskkill /PID <PID> /F  # Windows
-```
-
-### Database Connection Error
-
-```bash
-# Verify PostgreSQL is running
-pg_isready
-
-# Check credentials in .env
-# Ensure database exists
-createdb book_store
-```
-
-### API Not Working
-
-- Verify backend is running on port 5000
-- Check `.env.local` in frontend for API URL
-- Look at browser console and backend logs for errors
-
-## 🚢 Deployment
-
-### Heroku
-
-```bash
-# Create Heroku apps
-heroku create my-book-backend
-heroku create my-book-frontend
-
-# Add PostgreSQL addon
-heroku addons:create heroku-postgresql:hobby-dev -a my-book-backend
-
-# Deploy backend
 cd backend
-git push heroku main
-
-# Deploy frontend
-cd "Book Selling Website"
-git push heroku main
+npm install
+npm run dev
 ```
 
-### AWS / Azure / GCP
+### Database migration
 
-See deployment guides in documentation.
+```bash
+node database/migrations/run.js
+node database/migrations/add-rating-column.js
+```
 
-## 📝 Environment Variables
+## 7) Bien moi truong
 
-### Backend (.env)
+### Backend (`backend/.env`)
 
 ```env
 PORT=5000
@@ -304,113 +191,17 @@ DB_PORT=5432
 DB_NAME=book_store
 DB_USER=postgres
 DB_PASSWORD=your_password
-JWT_SECRET=your_secret_key
+JWT_SECRET=your_secret
+JWT_EXPIRE=7d
 FRONTEND_URL=http://localhost:5173
 ```
 
-### Frontend (.env.local)
+### Frontend (`.env.local`)
 
 ```env
 VITE_API_URL=http://localhost:5000/api
 ```
 
-## 🔄 Development Workflow
-
-```bash
-# Terminal 1: Start Backend
-cd backend
-npm install
-npm run migrate
-npm run dev
-
-# Terminal 2: Start Frontend
-cd "Book Selling Website"
-npm install
-npm run dev
-```
-
-Both should be running:
-
-- Frontend: http://localhost:5173
-- Backend: http://localhost:5000
-- API: http://localhost:5000/api
-
-## 📊 Metrics & Analytics
-
-Seller dashboard includes:
-
-- Total books listed
-- Total inventory count
-- Total orders received
-- Total revenue
-- Recent orders (last 30 days)
-
-## 🔒 Security Features
-
-- Passwords hashed with bcryptjs
-- JWT-based authentication
-- Role-based access control
-- Protected API endpoints
-- Input validation & sanitization
-- CORS configuration
-- Environment variables for secrets
-
-## 🎨 Customization
-
-### Styling
-
-- Edit `/src/styles/` for CSS
-- Modify Tailwind config in `tailwind.config.js`
-- Update theme colors in CSS variables
-
-### Database
-
-- Modify schema in `backend/migrations/run.js`
-- Add new tables as needed
-- Update controllers & routes
-
-### Features
-
-- Add new routes in `backend/routes/`
-- Create controllers in `backend/controllers/`
-- Add React components in `src/app/components/`
-
-## 🤝 Contributing
-
-1. Create feature branch: `git checkout -b feature/your-feature`
-2. Commit changes: `git commit -am 'Add feature'`
-3. Push to branch: `git push origin feature/your-feature`
-4. Open Pull Request
-
-## 📄 License
-
-MIT License - feel free to use for personal or commercial projects
-
-## 🆘 Support
-
-For issues or questions:
-
-1. Check existing documentation
-2. Review error messages in console/logs
-3. Check browser DevTools (F12)
-4. Verify environment configuration
-5. See troubleshooting section
-
-## 🎯 Future Enhancements
-
-- [ ] Payment gateway integration (Stripe/PayPal)
-- [ ] Email notifications
-- [ ] Book reviews and ratings
-- [ ] Advanced admin dashboard
-- [ ] Search with Elasticsearch
-- [ ] Multiple images per book
-- [ ] Inventory alerts
-- [ ] Return/refund management
-- [ ] Social sharing
-- [ ] Mobile app
-
 ---
 
-**Made with ❤️ for book lovers** 📚✨
-
-_Last updated: April 2026_
+Neu ban muon, minh co the update tiep README theo dang "tai lieu nop mon" (co sequence diagram + bang mapping chuc nang -> endpoint -> bang DB) de doc/bao cao de hon.
