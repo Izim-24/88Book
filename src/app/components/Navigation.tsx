@@ -40,14 +40,21 @@ export function Navigation({
             </button>
 
             <div className="hidden md:flex items-center gap-6">
-              <button className="text-muted-foreground hover:text-foreground/80 transition-colors">
+              <button 
+                onClick={() => onNavigate("new-arrivals")}
+                className={`transition-colors font-medium ${
+                  currentPage === "new-arrivals" ? "text-foreground" : "text-muted-foreground hover:text-foreground/80"
+                }`}
+              >
                 New Arrivals
               </button>
-              <button className="text-muted-foreground hover:text-foreground/80 transition-colors">
+              <button 
+                onClick={() => onNavigate("bestsellers")}
+                className={`transition-colors font-medium ${
+                  currentPage === "bestsellers" ? "text-foreground" : "text-muted-foreground hover:text-foreground/80"
+                }`}
+              >
                 Bestsellers
-              </button>
-              <button className="text-muted-foreground hover:text-foreground/80 transition-colors">
-                Blog
               </button>
             </div>
           </div>

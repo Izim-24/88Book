@@ -35,203 +35,6 @@ import { AuthProvider, useAuth } from "../contexts/AuthContext";
 import { CartProvider, useCart } from "../contexts/CartContext";
 import { booksAPI, ordersAPI, addressesAPI, wishlistAPI } from "../api/client";
 
-// Mock book data
-const featuredBooks: Book[] = [
-  {
-    id: "1",
-    title: "The Great Gatsby",
-    author: "F. Scott Fitzgerald",
-    price: 14.99,
-    coverImage:
-      "https://images.unsplash.com/photo-1760120482171-d9d5468f75fd?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjbGFzc2ljJTIwbGl0ZXJhdHVyZSUyMGJvb2slMjBjb3ZlcnxlbnwxfHx8fDE3Njk3MTIwNzh8MA&ixlib=rb-4.1.0&q=80&w=1080",
-    category: "Classic",
-    rating: 4.5,
-    description: "A classic American novel set in the Jazz Age.",
-  },
-  {
-    id: "2",
-    title: "Modern Fiction",
-    author: "Jane Anderson",
-    price: 19.99,
-    coverImage:
-      "https://images.unsplash.com/photo-1599185186578-0ba91c2a15c0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmaWN0aW9uJTIwbm92ZWwlMjBib29rfGVufDF8fHx8MTc2OTczNDM0OXww&ixlib=rb-4.1.0&q=80&w=1080",
-    category: "Fiction",
-    rating: 4.7,
-    description: "A gripping contemporary novel about family and identity.",
-  },
-  {
-    id: "3",
-    title: "The Science of Everything",
-    author: "Dr. Robert Chen",
-    price: 29.99,
-    coverImage:
-      "https://images.unsplash.com/photo-1725870475677-7dc91efe9f93?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzY2llbmNlJTIwdGV4dGJvb2slMjBjb3ZlcnxlbnwxfHx8fDE3Njk3MzQzNDl8MA&ixlib=rb-4.1.0&q=80&w=1080",
-    category: "Science",
-    rating: 4.8,
-    description: "An accessible guide to understanding the natural world.",
-  },
-  {
-    id: "4",
-    title: "Shadow in the Night",
-    author: "Michael Cross",
-    price: 16.99,
-    coverImage:
-      "https://images.unsplash.com/photo-1760696473709-a7da66ee87a6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxteXN0ZXJ5JTIwdGhyaWxsZXIlMjBib29rfGVufDF8fHx8MTc2OTcwNzI4MXww&ixlib=rb-4.1.0&q=80&w=1080",
-    category: "Mystery",
-    rating: 4.6,
-    description:
-      "A thrilling mystery that will keep you guessing until the end.",
-  },
-];
-
-const allBooks: Book[] = [
-  ...featuredBooks,
-  {
-    id: "5",
-    title: "Culinary Adventures",
-    author: "Chef Maria Lopez",
-    price: 24.99,
-    coverImage:
-      "https://images.unsplash.com/photo-1590587754541-a3a4f2e0d06f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb29rYm9vayUyMHJlY2lwZSUyMGJvb2t8ZW58MXx8fHwxNzY5NzA2MzU4fDA&ixlib=rb-4.1.0&q=80&w=1080",
-    category: "Cooking",
-    rating: 4.9,
-    description: "Delicious recipes from around the world.",
-  },
-  {
-    id: "6",
-    title: "Realm of Dragons",
-    author: "Sarah Winter",
-    price: 22.99,
-    coverImage:
-      "https://images.unsplash.com/photo-1711185892188-13f35959d3ca?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmYW50YXN5JTIwbm92ZWwlMjBib29rfGVufDF8fHx8MTc2OTcwNzI4Mnww&ixlib=rb-4.1.0&q=80&w=1080",
-    category: "Fantasy",
-    rating: 4.8,
-    description: "An epic fantasy adventure in a world of magic.",
-  },
-  {
-    id: "7",
-    title: "Life Stories",
-    author: "John Davidson",
-    price: 18.99,
-    coverImage:
-      "https://images.unsplash.com/photo-1698956483970-a47edef29331?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxiaW9ncmFwaHklMjBhdXRvYmlvZ3JhcGh5JTIwYm9va3xlbnwxfHx8fDE3Njk3MzQzNTN8MA&ixlib=rb-4.1.0&q=80&w=1080",
-    category: "Biography",
-    rating: 4.4,
-    description: "Inspiring stories of remarkable individuals.",
-  },
-  {
-    id: "8",
-    title: "Atomic Habits",
-    author: "James Clear",
-    price: 21.99,
-    coverImage:
-      "https://images.unsplash.com/photo-1598301257942-e6bde1d2149b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxidXNpbmVzcyUyMHNlbGYlMjBoZWxwJTIwYm9va3xlbnwxfHx8fDE3Njk3MzQzNTN8MA&ixlib=rb-4.1.0&q=80&w=1080",
-    category: "Self-Help",
-    rating: 4.9,
-    description: "Transform your life with small habits.",
-  },
-  {
-    id: "9",
-    title: "Love in Paris",
-    author: "Emily Stone",
-    price: 15.99,
-    coverImage:
-      "https://images.unsplash.com/photo-1735805819333-19bed84b654e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxyb21hbmNlJTIwbm92ZWwlMjBib29rfGVufDF8fHx8MTc2OTcxMzgyN3ww&ixlib=rb-4.1.0&q=80&w=1080",
-    category: "Romance",
-    rating: 4.5,
-    description: "A heartwarming romance set in the city of love.",
-  },
-];
-
-// Mock user data
-const mockUser: UserProfile = {
-  name: "Sarah Johnson",
-  email: "sarah.johnson@email.com",
-  phone: "+1 (555) 123-4567",
-  joinedDate: "January 15, 2024",
-};
-
-const mockOrders: Order[] = [
-  {
-    id: "ORD-2024-001",
-    date: "April 10, 2026",
-    total: 64.97,
-    status: "delivered",
-    items: [
-      { bookTitle: "The Great Gatsby", quantity: 1, price: 14.99 },
-      { bookTitle: "Modern Fiction", quantity: 1, price: 19.99 },
-      { bookTitle: "The Science of Everything", quantity: 1, price: 29.99 },
-    ],
-  },
-  {
-    id: "ORD-2024-002",
-    date: "March 25, 2026",
-    total: 46.98,
-    status: "delivered",
-    items: [
-      { bookTitle: "Shadow in the Night", quantity: 1, price: 16.99 },
-      { bookTitle: "The Science of Everything", quantity: 1, price: 29.99 },
-    ],
-  },
-  {
-    id: "ORD-2024-003",
-    date: "April 15, 2026",
-    total: 22.99,
-    status: "shipped",
-    items: [{ bookTitle: "Realm of Dragons", quantity: 1, price: 22.99 }],
-  },
-];
-
-const mockAddresses: Address[] = [
-  {
-    id: "addr-1",
-    label: "Home",
-    name: "Sarah Johnson",
-    street: "123 Main Street, Apt 4B",
-    city: "New York",
-    state: "NY",
-    zipCode: "10001",
-    country: "United States",
-    isDefault: true,
-  },
-  {
-    id: "addr-2",
-    label: "Work",
-    name: "Sarah Johnson",
-    street: "456 Business Ave, Suite 200",
-    city: "New York",
-    state: "NY",
-    zipCode: "10002",
-    country: "United States",
-    isDefault: false,
-  },
-];
-
-const mockWishlist: Book[] = [
-  {
-    id: "5",
-    title: "Culinary Adventures",
-    author: "Chef Maria Lopez",
-    price: 24.99,
-    coverImage:
-      "https://images.unsplash.com/photo-1590587754541-a3a4f2e0d06f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb29rYm9vayUyMHJlY2lwZSUyMGJvb2t8ZW58MXx8fHwxNzY5NzA2MzU4fDA&ixlib=rb-4.1.0&q=80&w=1080",
-    category: "Cooking",
-    rating: 4.9,
-    description: "Delicious recipes from around the world.",
-  },
-  {
-    id: "8",
-    title: "Atomic Habits",
-    author: "James Clear",
-    price: 21.99,
-    coverImage:
-      "https://images.unsplash.com/photo-1598301257942-e6bde1d2149b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxidXNpbmVzcyUyMHNlbGYlMjBoZWxwJTIwYm9va3xlbnwxfHx8fDE3Njk3MzQzNTN8MA&ixlib=rb-4.1.0&q=80&w=1080",
-    category: "Self-Help",
-    rating: 4.9,
-    description: "Transform your life with small habits.",
-  },
-];
-
 function AppContent() {
   const [currentPage, setCurrentPage] = useState("home");
   const [searchQuery, setSearchQuery] = useState("");
@@ -250,14 +53,6 @@ function AppContent() {
     updateItem,
     fetchCart,
   } = useCart();
-
-  // Mock user data for demo
-  const mockUser: UserProfile = {
-    name: user?.fullName || "Guest User",
-    email: user?.email || "guest@example.com",
-    phone: "+1 (555) 123-4567",
-    joinedDate: "January 15, 2024",
-  };
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -403,11 +198,6 @@ function AppContent() {
     setCurrentPage("home");
   };
 
-  const handleUpdateProfile = (profile: UserProfile) => {
-    // This would call the API to update profile
-    console.log("Update profile:", profile);
-  };
-
   const handleAddAddress = async (newAddress: Omit<Address, "id">) => {
     const res = await addressesAPI.add(newAddress);
     if (res.success) {
@@ -468,6 +258,10 @@ function AppContent() {
     Classic: BookMarked,
   };
 
+  // Filtered books for special pages
+  const newArrivals = [...books].sort((a, b) => b.id - a.id).slice(0, 12);
+  const bestsellers = [...books].sort((a, b) => (Number(b.rating) || 0) - (Number(a.rating) || 0)).slice(0, 12);
+
   return (
     <div className="min-h-screen bg-background">
       <Navigation
@@ -526,7 +320,7 @@ function AppContent() {
                     Kham pha sach moi <ArrowRight className="ml-2 h-4 w-4" />
                   </button>
                   <button
-                    onClick={() => setCurrentPage("browse")}
+                    onClick={() => setCurrentPage("bestsellers")}
                     className="inline-flex items-center justify-center px-6 py-3 bg-background border border-border text-foreground rounded-lg hover:bg-secondary transition-colors font-semibold"
                   >
                     Xem sach ban chay
@@ -580,7 +374,6 @@ function AppContent() {
                       }}
                       onAddToCart={handleAddToCart}
                       onViewDetails={(book) => {
-                        console.log("onViewDetails called with book:", book);
                         setSelectedBook(book);
                         setIsModalOpen(true);
                       }}
@@ -615,35 +408,22 @@ function AppContent() {
                       by {book.author}
                     </p>
                     <button
-                      onClick={() => setCurrentPage("browse")}
+                      onClick={() => {
+                        setSelectedBook({
+                          ...book,
+                          id: book.id.toString(),
+                          coverImage: book.image_url || "https://via.placeholder.com/400",
+                          rating: Number(book.rating) || 4.5,
+                          description: book.description || "No description available"
+                        });
+                        setIsModalOpen(true);
+                      }}
                       className="text-accent font-semibold hover:underline"
                     >
                       Read why we picked this
                     </button>
                   </article>
                 ))}
-              </div>
-            </div>
-          </section>
-
-          {/* Reading Mood */}
-          <section className="section-block px-4 sm:px-6 lg:px-8">
-            <div className="max-w-7xl mx-auto section-panel p-8">
-              <h2 className="text-3xl sm:text-4xl font-bold mb-3">Reading Mood</h2>
-              <p className="text-muted-foreground mb-6">
-                Ban muon doc gi hom nay?
-              </p>
-              <div className="flex flex-wrap gap-3">
-                {["Thu gian", "Truyen cam hung", "Phieu luu", "Hoc hoi"].map(
-                  (mood) => (
-                    <button
-                      key={mood}
-                      className="px-4 py-2 rounded-full border border-border bg-background hover:bg-secondary hover:border-primary transition-all"
-                    >
-                      {mood}
-                    </button>
-                  ),
-                )}
               </div>
             </div>
           </section>
@@ -696,183 +476,7 @@ function AppContent() {
                 })}
               </div>
             </div>
-          </section>
-
-          {/* Reader's Choice / Social Proof */}
-          <section className="section-block px-4 sm:px-6 lg:px-8">
-            <div className="max-w-7xl mx-auto">
-              <h2 className="text-3xl sm:text-4xl font-bold mb-2">
-                Reader&apos;s Choice
-              </h2>
-              <p className="text-muted-foreground text-lg mb-8">
-                What our readers loved most this month
-              </p>
-              <div className="flex gap-5 overflow-x-auto pb-2 snap-x">
-                {books.slice(0, 6).map((book, index) => (
-                  <article
-                    key={book.id}
-                    className="reveal-on-scroll min-w-[280px] md:min-w-[320px] bg-card border border-border rounded-xl p-5 shadow-sm snap-start"
-                  >
-                    <div className="flex items-center gap-4 mb-4">
-                      <img
-                        src={
-                          book.image_url || "https://via.placeholder.com/80x110"
-                        }
-                        alt={book.title}
-                        className="w-16 h-24 object-cover rounded-md"
-                      />
-                      <div>
-                        <h3 className="font-semibold line-clamp-2">
-                          {book.title}
-                        </h3>
-                        <p className="text-sm text-muted-foreground">
-                          {book.author}
-                        </p>
-                      </div>
-                    </div>
-                    <p className="text-sm text-muted-foreground italic">
-                      "
-                      {
-                        [
-                          "A practical and inspiring read that reshaped my daily routine.",
-                          "Could not put this down. Beautiful writing and strong ideas.",
-                          "Simple, memorable lessons I can apply immediately.",
-                          "One of the best books I have read this year.",
-                          "Perfect balance between storytelling and useful knowledge.",
-                          "A thoughtful book that keeps you reflecting for days.",
-                        ][index % 6]
-                      }
-                      "
-                    </p>
-                  </article>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          {/* Stats Section */}
-          <section className="section-block section-soft px-4 sm:px-6 lg:px-8">
-            <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="text-center p-6 rounded-lg hover:bg-accent/10 transition-colors">
-                <TrendingUp className="h-12 w-12 mx-auto mb-4 text-accent" />
-                <h3 className="text-xl font-bold mb-2">100K+ Books</h3>
-                <p className="text-muted-foreground">
-                  Discover books across all genres
-                </p>
-              </div>
-              <div className="text-center p-6 rounded-lg hover:bg-accent/10 transition-colors">
-                <Star className="h-12 w-12 mx-auto mb-4 text-accent" />
-                <h3 className="text-xl font-bold mb-2">5 Star Ratings</h3>
-                <p className="text-muted-foreground">
-                  Trusted by millions of readers
-                </p>
-              </div>
-              <div className="text-center p-6 rounded-lg hover:bg-accent/10 transition-colors">
-                <ArrowRight className="h-12 w-12 mx-auto mb-4 text-accent" />
-                <h3 className="text-xl font-bold mb-2">Fast Delivery</h3>
-                <p className="text-muted-foreground">
-                  Quick shipping to your door
-                </p>
-              </div>
-            </div>
-          </section>
-
-          {/* Why BookHaven */}
-          <section className="section-block px-4 sm:px-6 lg:px-8">
-            <div className="max-w-7xl mx-auto">
-              <h2 className="text-3xl sm:text-4xl font-bold mb-8">Why BookHaven?</h2>
-              <div className="grid md:grid-cols-3 gap-5">
-                <div className="bg-card border border-border rounded-2xl p-6">
-                  <Truck className="w-8 h-8 text-primary mb-3" />
-                  <h3 className="text-xl font-semibold mb-2">Giao hang nhanh</h3>
-                  <p className="text-muted-foreground">
-                    Van chuyen toan quoc, dong goi can than den tay ban.
-                  </p>
-                </div>
-                <div className="bg-card border border-border rounded-2xl p-6">
-                  <Leaf className="w-8 h-8 text-primary mb-3" />
-                  <h3 className="text-xl font-semibold mb-2">Than thien moi truong</h3>
-                  <p className="text-muted-foreground">
-                    Uu tien vat lieu dong goi tai che, giam tac dong moi truong.
-                  </p>
-                </div>
-                <div className="bg-card border border-border rounded-2xl p-6">
-                  <ShieldCheck className="w-8 h-8 text-primary mb-3" />
-                  <h3 className="text-xl font-semibold mb-2">Tuyen chon ky luong</h3>
-                  <p className="text-muted-foreground">
-                    Dau sach duoc danh gia chat luong boi doi ngu bien tap.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Newsletter Section */}
-          <section className="section-block section-soft px-4 sm:px-6 lg:px-8">
-            <div className="max-w-3xl mx-auto text-center section-panel p-8 sm:p-10">
-              <h2 className="text-3xl sm:text-4xl font-bold mb-3 font-serif">
-                Join Our Newsletter
-              </h2>
-              <p className="text-muted-foreground mb-7">
-                Subscribe to receive reading recommendations and an exclusive
-                10% discount code for your first order.
-              </p>
-              <form className="flex flex-col sm:flex-row gap-3 justify-center">
-                <input
-                  type="email"
-                  required
-                  placeholder="Enter your email"
-                  className="w-full sm:w-[360px] px-4 py-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-accent/40"
-                />
-                <button
-                  type="submit"
-                  className="px-6 py-3 rounded-lg bg-accent text-accent-foreground font-semibold hover:bg-accent/90 transition-colors"
-                >
-                  Subscribe
-                </button>
-              </form>
-            </div>
-          </section>
-
-          {/* Footer */}
-          <footer className="bg-primary text-primary-foreground py-14 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-              <div>
-                <h3 className="font-semibold text-lg mb-3">BookHaven</h3>
-                <p className="text-sm text-primary-foreground/80">
-                  A modern book marketplace where readers discover meaningful
-                  stories every day.
-                </p>
-              </div>
-              <div>
-                <h4 className="font-semibold mb-3">Quick Links</h4>
-                <ul className="space-y-2 text-sm text-primary-foreground/80">
-                  <li>Home</li>
-                  <li>Browse Books</li>
-                  <li>Best Sellers</li>
-                  <li>New Releases</li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-semibold mb-3">Customer Support</h4>
-                <ul className="space-y-2 text-sm text-primary-foreground/80">
-                  <li>Contact Us</li>
-                  <li>Shipping Policy</li>
-                  <li>Return & Refund</li>
-                  <li>FAQ</li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-semibold mb-3">Social</h4>
-                <ul className="space-y-2 text-sm text-primary-foreground/80">
-                  <li>Facebook</li>
-                  <li>Instagram</li>
-                  <li>YouTube</li>
-                  <li>TikTok</li>
-                </ul>
-              </div>
-            </div>
-          </footer>
+          </div>
         </main>
       )}
 
@@ -881,7 +485,6 @@ function AppContent() {
           books={books}
           onAddToCart={handleAddToCart}
           onViewDetails={(book) => {
-            console.log("onViewDetails called with book:", book);
             setSelectedBook(book);
             setIsModalOpen(true);
           }}
@@ -889,6 +492,64 @@ function AppContent() {
           onToggleWishlist={handleToggleWishlist}
           wishlist={wishlist}
         />
+      )}
+
+      {currentPage === "new-arrivals" && (
+        <main className="py-8 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto">
+            <h1 className="mb-8">New Arrivals</h1>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {newArrivals.map((book) => (
+                <BookCard
+                  key={book.id}
+                  book={{
+                    ...book,
+                    id: book.id.toString(),
+                    coverImage: book.image_url || "https://via.placeholder.com/400",
+                    rating: Number(book.rating) || 4.5,
+                    description: book.description || "No description available"
+                  }}
+                  onAddToCart={handleAddToCart}
+                  onViewDetails={(b) => {
+                    setSelectedBook(b);
+                    setIsModalOpen(true);
+                  }}
+                  onToggleWishlist={handleToggleWishlist}
+                  isWishlisted={wishlist.some((w) => w.id.toString() === book.id.toString())}
+                />
+              ))}
+            </div>
+          </div>
+        </main>
+      )}
+
+      {currentPage === "bestsellers" && (
+        <main className="py-8 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto">
+            <h1 className="mb-8">Bestsellers</h1>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {bestsellers.map((book) => (
+                <BookCard
+                  key={book.id}
+                  book={{
+                    ...book,
+                    id: book.id.toString(),
+                    coverImage: book.image_url || "https://via.placeholder.com/400",
+                    rating: Number(book.rating) || 4.5,
+                    description: book.description || "No description available"
+                  }}
+                  onAddToCart={handleAddToCart}
+                  onViewDetails={(b) => {
+                    setSelectedBook(b);
+                    setIsModalOpen(true);
+                  }}
+                  onToggleWishlist={handleToggleWishlist}
+                  isWishlisted={wishlist.some((w) => w.id.toString() === book.id.toString())}
+                />
+              ))}
+            </div>
+          </div>
+        </main>
       )}
 
       {currentPage === "cart" && (
@@ -947,7 +608,6 @@ function AppContent() {
         <SellerDashboard />
       )}
 
-      {/* Book Details Modal */}
       <BookDetailsModal
         book={selectedBook}
         isOpen={isModalOpen}
