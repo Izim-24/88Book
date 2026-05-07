@@ -136,6 +136,9 @@ export const ordersAPI = {
 
 // Admin API
 export const adminAPI = {
+  getUsers: () => apiClient.get("/admin/users"),
+  updateUserRole: (userId, role) =>
+    apiClient.put(`/admin/users/${userId}/role`, { role }),
   getBooks: (page = 1, limit = 20) =>
     apiClient.get(`/admin/books?page=${page}&limit=${limit}`),
   getOrders: () => apiClient.get("/admin/orders"),

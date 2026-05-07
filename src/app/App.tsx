@@ -671,7 +671,7 @@ function AppContent() {
       )}
 
       {currentPage === "admin" && user?.role === "admin" && (
-        <AdminDashboard />
+        <AdminDashboard currentUserId={user?.id} />
       )}
 
       <BookDetailsModal

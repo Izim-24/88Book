@@ -1,5 +1,69 @@
 import pool from "../config/database.js";
 
+export const getAdminUsers = async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT id, email, full_name, role, created_at FROM users ORDER BY created_at DESC",
+    );
+
+    res.json({
+      success: true,
+      users: result.rows,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching users",
+    });
+  }
+};
+
+export const updateUserRole = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { role } = req.body;
+
+    if (!["admin", "buyer"].includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message: "Role must be admin or buyer",
+      });
+    }
+
+    if (Number(userId) === Number(req.user.userId)) {
+      return res.status(400).json({
+        success: false,
+        message: "You cannot change your own role",
+      });
+    }
+
+    const result = await pool.query(
+      "UPDATE users SET role = $1, updated_at = GETDATE() OUTPUT INSERTED.id, INSERTED.email, INSERTED.full_name, INSERTED.role, INSERTED.created_at WHERE id = $2",
+      [role, userId],
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "User role updated",
+      user: result.rows[0],
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Error updating user role",
+    });
+  }
+};
+
 export const getAdminBooks = async (req, res) => {
   try {
     const { page = 1, limit = 20 } = req.query;

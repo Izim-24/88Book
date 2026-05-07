@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Trash2, Edit2, Plus } from "lucide-react";
+import { Trash2, Edit2, Plus, ShieldCheck, Users } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -34,12 +34,28 @@ interface AdminBook {
   image_url: string;
 }
 
-export function AdminDashboard() {
+interface AdminUser {
+  id: number;
+  email: string;
+  full_name: string;
+  role: "admin" | "buyer";
+  created_at: string;
+}
+
+interface AdminDashboardProps {
+  currentUserId?: number | string;
+}
+
+export function AdminDashboard({ currentUserId }: AdminDashboardProps) {
   const [books, setBooks] = useState<AdminBook[]>([]);
+  const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(false);
+  const [usersLoading, setUsersLoading] = useState(false);
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [userError, setUserError] = useState("");
+  const [userSuccess, setUserSuccess] = useState("");
   const [formData, setFormData] = useState<BookForm>({
     title: "",
     author: "",
@@ -54,6 +70,7 @@ export function AdminDashboard() {
   // Fetch admin-managed books
   useEffect(() => {
     fetchBooks();
+    fetchUsers();
   }, []);
 
   const fetchBooks = async () => {
@@ -69,6 +86,42 @@ export function AdminDashboard() {
       setError("Error loading books");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      setUsersLoading(true);
+      const response = await adminAPI.getUsers();
+      if (response.success) {
+        setUsers(response.users || []);
+      } else {
+        setUserError(response.message || "Failed to load users");
+      }
+    } catch (err) {
+      setUserError("Error loading users");
+    } finally {
+      setUsersLoading(false);
+    }
+  };
+
+  const handleRoleChange = async (userId: number, role: "admin" | "buyer") => {
+    setUserError("");
+    setUserSuccess("");
+
+    if (Number(userId) === Number(currentUserId)) {
+      setUserError("You cannot change your own role");
+      return;
+    }
+
+    const response = await adminAPI.updateUserRole(userId, role);
+    if (response.success) {
+      setUsers((prev) =>
+        prev.map((user) => (user.id === userId ? response.user : user)),
+      );
+      setUserSuccess("User role updated");
+    } else {
+      setUserError(response.message || "Failed to update user role");
     }
   };
 
@@ -191,6 +244,75 @@ export function AdminDashboard() {
   return (
     <main className="py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5" />
+              Users ({users.length})
+            </CardTitle>
+            <CardDescription>Manage account roles</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {userError && (
+              <div className="bg-red-50 border border-red-200 text-red-800 px-3 py-2 rounded-lg text-sm mb-4">
+                {userError}
+              </div>
+            )}
+            {userSuccess && (
+              <div className="bg-green-50 border border-green-200 text-green-800 px-3 py-2 rounded-lg text-sm mb-4">
+                {userSuccess}
+              </div>
+            )}
+            {usersLoading ? (
+              <p className="text-muted-foreground">Loading users...</p>
+            ) : (
+              <div className="space-y-3">
+                {users.map((user) => {
+                  const isCurrentUser = Number(user.id) === Number(currentUserId);
+                  return (
+                    <div
+                      key={user.id}
+                      className="border border-border rounded-lg p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                    >
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold">{user.full_name}</p>
+                          {user.role === "admin" && (
+                            <ShieldCheck className="w-4 h-4 text-primary" />
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          {user.email}
+                        </p>
+                      </div>
+                      <select
+                        value={user.role}
+                        disabled={isCurrentUser}
+                        onChange={(event) =>
+                          handleRoleChange(
+                            user.id,
+                            event.target.value as "admin" | "buyer",
+                          )
+                        }
+                        className="h-10 rounded-md border border-border bg-background px-3 text-sm disabled:opacity-60"
+                        aria-label={`Role for ${user.email}`}
+                        title={
+                          isCurrentUser
+                            ? "You cannot change your own role"
+                            : "Change role"
+                        }
+                      >
+                        <option value="buyer">Buyer</option>
+                        <option value="admin">Admin</option>
+                      </select>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Form Section */}
           <div className="lg:col-span-1">

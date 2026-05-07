@@ -82,6 +82,8 @@ Server will run on `http://localhost:5000`
 
 ### Admin Dashboard
 
+- `GET /api/admin/users` - Get all users (protected, admins only)
+- `PUT /api/admin/users/:userId/role` - Update user role to `admin` or `buyer` (protected, admins only)
 - `GET /api/admin/books` - Get all books (protected, admins only)
 - `GET /api/admin/orders` - Get all orders (protected, admins only)
 - `GET /api/admin/stats` - Get store statistics (protected, admins only)
