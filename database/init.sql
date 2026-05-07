@@ -137,6 +137,76 @@ BEGIN
 END;
 GO
 
+-- Migrate older local databases that were created before admin-owned books.
+IF OBJECT_ID(N'dbo.books', N'U') IS NOT NULL AND COL_LENGTH(N'dbo.books', N'admin_id') IS NULL
+BEGIN
+    ALTER TABLE dbo.books ADD admin_id INT NULL;
+END;
+GO
+
+IF OBJECT_ID(N'dbo.books', N'U') IS NOT NULL
+   AND COL_LENGTH(N'dbo.books', N'admin_id') IS NOT NULL
+   AND COL_LENGTH(N'dbo.books', N'seller_id') IS NOT NULL
+BEGIN
+    EXEC(N'UPDATE dbo.books SET admin_id = seller_id WHERE admin_id IS NULL');
+END;
+GO
+
+DECLARE @booksLegacyFk NVARCHAR(255);
+SELECT TOP 1 @booksLegacyFk = fk.name
+FROM sys.foreign_keys fk
+JOIN sys.foreign_key_columns fkc ON fk.object_id = fkc.constraint_object_id
+JOIN sys.columns c ON fkc.parent_object_id = c.object_id AND fkc.parent_column_id = c.column_id
+WHERE fk.parent_object_id = OBJECT_ID(N'dbo.books') AND c.name = N'seller_id';
+
+IF @booksLegacyFk IS NOT NULL
+BEGIN
+    EXEC(N'ALTER TABLE dbo.books DROP CONSTRAINT ' + QUOTENAME(@booksLegacyFk));
+END;
+GO
+
+IF OBJECT_ID(N'dbo.books', N'U') IS NOT NULL AND COL_LENGTH(N'dbo.books', N'seller_id') IS NOT NULL
+BEGIN
+    ALTER TABLE dbo.books DROP COLUMN seller_id;
+END;
+GO
+
+IF OBJECT_ID(N'dbo.order_items', N'U') IS NOT NULL AND COL_LENGTH(N'dbo.order_items', N'admin_id') IS NULL
+BEGIN
+    ALTER TABLE dbo.order_items ADD admin_id INT NULL;
+END;
+GO
+
+IF OBJECT_ID(N'dbo.order_items', N'U') IS NOT NULL
+   AND COL_LENGTH(N'dbo.order_items', N'admin_id') IS NOT NULL
+   AND COL_LENGTH(N'dbo.order_items', N'seller_id') IS NOT NULL
+BEGIN
+    EXEC(N'UPDATE dbo.order_items SET admin_id = seller_id WHERE admin_id IS NULL');
+END;
+GO
+
+DECLARE @itemsLegacyFk NVARCHAR(255);
+SELECT TOP 1 @itemsLegacyFk = fk.name
+FROM sys.foreign_keys fk
+JOIN sys.foreign_key_columns fkc ON fk.object_id = fkc.constraint_object_id
+JOIN sys.columns c ON fkc.parent_object_id = c.object_id AND fkc.parent_column_id = c.column_id
+WHERE fk.parent_object_id = OBJECT_ID(N'dbo.order_items') AND c.name = N'seller_id';
+
+IF @itemsLegacyFk IS NOT NULL
+BEGIN
+    EXEC(N'ALTER TABLE dbo.order_items DROP CONSTRAINT ' + QUOTENAME(@itemsLegacyFk));
+END;
+GO
+
+IF OBJECT_ID(N'dbo.order_items', N'U') IS NOT NULL AND COL_LENGTH(N'dbo.order_items', N'seller_id') IS NOT NULL
+BEGIN
+    ALTER TABLE dbo.order_items DROP COLUMN seller_id;
+END;
+GO
+
+UPDATE dbo.users SET role = N'buyer' WHERE role NOT IN (N'admin', N'buyer');
+GO
+
 -- ------------------------------------------------------------
 -- Seed data (safe to rerun)
 -- ------------------------------------------------------------
