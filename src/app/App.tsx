@@ -309,8 +309,8 @@ function AppContent() {
                   Discover stories that feel like home
                 </h1>
                 <p className="text-lg text-[#5A3E2B] mb-8 max-w-xl">
-                  Tim nhung cuon sach truyen cam hung cho ban moi ngay, trong
-                  mot khong gian doc sach am cung va gan gui thien nhien.
+                  Find inspiring books for every day, in a cozy reading space
+                  connected to nature.
                 </p>
                 <form
                   onSubmit={handleHeroSearch}
@@ -320,14 +320,14 @@ function AppContent() {
                   <input
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Tim ten sach, tac gia, the loai..."
+                    placeholder="Search by title, author, or category..."
                     className="flex-1 bg-transparent border-0 focus:outline-none"
                   />
                   <button
                     type="submit"
                     className="px-4 py-1.5 rounded-full bg-primary text-primary-foreground text-sm font-semibold"
                   >
-                    Tim
+                    Search
                   </button>
                 </form>
                 <div className="flex flex-wrap gap-3">
@@ -335,13 +335,13 @@ function AppContent() {
                     onClick={() => setCurrentPage("browse")}
                     className="inline-flex items-center justify-center px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-all font-semibold glow-cta"
                   >
-                    Kham pha sach moi <ArrowRight className="ml-2 h-4 w-4" />
+                    Explore new books <ArrowRight className="ml-2 h-4 w-4" />
                   </button>
                   <button
                     onClick={() => setCurrentPage("bestsellers")}
                     className="inline-flex items-center justify-center px-6 py-3 bg-background border border-border text-foreground rounded-lg hover:bg-secondary transition-colors font-semibold"
                   >
-                    Xem sach ban chay
+                    View bestsellers
                   </button>
                 </div>
               </div>
@@ -409,8 +409,8 @@ function AppContent() {
             <div className="max-w-7xl mx-auto">
               <h2 className="text-3xl sm:text-4xl font-bold mb-2">Staff Picks</h2>
               <p className="text-muted-foreground mb-8">
-                Goi y duoc chon boi team BookHaven tu nhung dau sach duoc yeu
-                thich nhat.
+                Recommendations handpicked by the BookHaven team from readers'
+                favorite titles.
               </p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                 {books.slice(4, 7).map((book) => (
