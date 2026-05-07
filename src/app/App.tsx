@@ -37,7 +37,9 @@ import { booksAPI, ordersAPI, addressesAPI, wishlistAPI, usersAPI } from "../api
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState("home");
+  const [pageHistory, setPageHistory] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [browseSearchQuery, setBrowseSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
@@ -168,7 +170,7 @@ function AppContent() {
   const handleAddToCart = async (book: Book) => {
     if (!isAuthenticated) {
       alert("Please login to add items to cart");
-      setCurrentPage("account");
+      handleNavigate("account");
       return;
     }
     const result = await addItem(book.id, 1);
@@ -201,19 +203,19 @@ function AppContent() {
   const handleCheckout = () => {
     if (!isAuthenticated) {
       alert("Please login to checkout");
-      setCurrentPage("account");
+      handleNavigate("account");
       return;
     }
-    setCurrentPage("checkout");
+    handleNavigate("checkout");
   };
 
   const handleOrderComplete = () => {
-    setCurrentPage("home");
+    handleNavigate("home");
   };
 
   const handleLogout = () => {
     logout();
-    setCurrentPage("home");
+    handleNavigate("home");
   };
 
   const handleAddAddress = async (newAddress: Omit<Address, "id">) => {
@@ -246,7 +248,7 @@ function AppContent() {
   const handleToggleWishlist = async (book: Book) => {
     if (!isAuthenticated) {
       alert("Please login to use wishlist");
-      setCurrentPage("account");
+      handleNavigate("account");
       return;
     }
     const isWishlisted = wishlist.some(b => b.id.toString() === book.id.toString());
@@ -261,7 +263,34 @@ function AppContent() {
 
   const handleHeroSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setCurrentPage("browse");
+    setBrowseSearchQuery(searchQuery.trim());
+    handleNavigate("browse");
+  };
+
+  const handleNavigate = (page: string) => {
+    if (page === currentPage) {
+      return;
+    }
+    setPageHistory((prev) => [...prev, currentPage]);
+    setCurrentPage(page);
+  };
+
+  const handleGoBack = () => {
+    setPageHistory((prev) => {
+      if (prev.length === 0) {
+        return prev;
+      }
+      const lastPage = prev[prev.length - 1];
+      setCurrentPage(lastPage);
+      return prev.slice(0, -1);
+    });
+  };
+
+  const handleTopSearch = (query: string) => {
+    setBrowseSearchQuery(query);
+    if (currentPage !== "browse") {
+      handleNavigate("browse");
+    }
   };
 
   const categoryIconMap: Record<string, any> = {
@@ -284,10 +313,13 @@ function AppContent() {
     <div className="min-h-screen bg-background">
       <Navigation
         cartItemCount={cartItemCount}
-        onNavigate={setCurrentPage}
+        onNavigate={handleNavigate}
         currentPage={currentPage}
         isLoggedIn={isAuthenticated}
         userRole={user?.role}
+        canGoBack={pageHistory.length > 0}
+        onGoBack={handleGoBack}
+        onSearchSubmit={handleTopSearch}
       />
 
       {currentPage === "home" && (
@@ -332,13 +364,13 @@ function AppContent() {
                 </form>
                 <div className="flex flex-wrap gap-3">
                   <button
-                    onClick={() => setCurrentPage("browse")}
+                    onClick={() => handleNavigate("browse")}
                     className="inline-flex items-center justify-center px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-all font-semibold glow-cta"
                   >
                     Explore new books <ArrowRight className="ml-2 h-4 w-4" />
                   </button>
                   <button
-                    onClick={() => setCurrentPage("bestsellers")}
+                    onClick={() => handleNavigate("bestsellers")}
                     className="inline-flex items-center justify-center px-6 py-3 bg-background border border-border text-foreground rounded-lg hover:bg-secondary transition-colors font-semibold"
                   >
                     View bestsellers
@@ -363,7 +395,7 @@ function AppContent() {
                   Featured Books
                 </h2>
                 <button
-                  onClick={() => setCurrentPage("browse")}
+                  onClick={() => handleNavigate("browse")}
                   className="text-accent hover:text-accent/80 hover:underline flex items-center font-bold transition-colors"
                 >
                   View All <ArrowRight className="ml-2 h-4 w-4" />
@@ -478,7 +510,7 @@ function AppContent() {
                       key={category}
                       onClick={() => {
                         setSelectedCategory(category);
-                        setCurrentPage("browse");
+                        handleNavigate("browse");
                       }}
                       className="category-card text-center font-semibold group"
                     >
@@ -507,6 +539,7 @@ function AppContent() {
             setIsModalOpen(true);
           }}
           initialCategory={selectedCategory}
+          initialSearchQuery={browseSearchQuery}
           onToggleWishlist={handleToggleWishlist}
           wishlist={wishlist}
         />
@@ -600,7 +633,7 @@ function AppContent() {
             0,
           )}
           onOrderComplete={handleOrderComplete}
-          onCancel={() => setCurrentPage("cart")}
+          onCancel={() => handleNavigate("cart")}
         />
       )}
 
