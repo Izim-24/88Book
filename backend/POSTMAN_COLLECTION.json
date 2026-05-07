@@ -1,0 +1,198 @@
+{
+  "info": {
+    "name": "88Book Backend API",
+    "description": "Collection for testing 88Book backend with routing, cookies, sessions, and authentication",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Trang chủ",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": [""]
+        },
+        "description": "Hiển thị trang chủ với theme từ cookie"
+      }
+    },
+    {
+      "name": "2a. Đặt theme - Dark",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/set-theme/dark",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["set-theme", "dark"]
+        },
+        "description": "Lưu theme 'dark' vào cookie (thời gian 30 ngày)"
+      }
+    },
+    {
+      "name": "2b. Đặt theme - Light",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/set-theme/light",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["set-theme", "light"]
+        },
+        "description": "Lưu theme 'light' vào cookie"
+      }
+    },
+    {
+      "name": "2c. Xóa theme cookie",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/logout-theme",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["logout-theme"]
+        },
+        "description": "Xóa theme cookie (reset về light mặc định)"
+      }
+    },
+    {
+      "name": "3a. Xem hướng dẫn đăng nhập",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/login",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["login"]
+        },
+        "description": "Xem hướng dẫn cách đăng nhập"
+      }
+    },
+    {
+      "name": "3b. Đăng nhập",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"student123\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/login",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["login"]
+        },
+        "description": "Đăng nhập - Lưu username và loginTime vào session"
+      }
+    },
+    {
+      "name": "4a. Xem profile (lần 1)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/profile",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["profile"]
+        },
+        "description": "Xem thông tin cá nhân - Lần 1 (profileVisitCount: 1)"
+      }
+    },
+    {
+      "name": "4b. Xem profile (lần 2)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/profile",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["profile"]
+        },
+        "description": "Xem thông tin cá nhân - Lần 2 (profileVisitCount: 2)"
+      }
+    },
+    {
+      "name": "4c. Xem profile (lần 3)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/profile",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["profile"]
+        },
+        "description": "Xem thông tin cá nhân - Lần 3 (profileVisitCount: 3)"
+      }
+    },
+    {
+      "name": "5. Đăng xuất",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/logout",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["logout"]
+        },
+        "description": "Xóa session (đăng xuất)"
+      }
+    },
+    {
+      "name": "6. Cố gắng xem profile sau logout (sẽ bị chặn)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/profile",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["profile"]
+        },
+        "description": "Cố gắng xem profile sau khi logout - Sẽ trả về 401 Unauthorized"
+      }
+    },
+    {
+      "name": "Debug - Xem thông tin session",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/session-info",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["session-info"]
+        },
+        "description": "Xem thông tin session hiện tại (cho mục đích debug)"
+      }
+    }
+  ]
+}
