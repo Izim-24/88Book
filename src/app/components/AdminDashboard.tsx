@@ -256,6 +256,11 @@ export function AdminDashboard({
     if (response.success) {
       setRecommendationIds((response.books || []).map((book: AdminBook) => book.id));
       setRecommendationSuccess("Recommendations updated");
+      window.dispatchEvent(
+        new CustomEvent("recommendations-updated", {
+          detail: response.books || [],
+        }),
+      );
     } else {
       setRecommendationError(response.message || "Failed to update recommendations");
     }

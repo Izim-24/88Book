@@ -107,6 +107,24 @@ function AppContent() {
     loadBooks();
   }, [selectedCategory]);
 
+  useEffect(() => {
+    const handleRecommendationsUpdated = (event: Event) => {
+      const customEvent = event as CustomEvent<Book[]>;
+      setRecommendations(customEvent.detail || []);
+    };
+
+    window.addEventListener(
+      "recommendations-updated",
+      handleRecommendationsUpdated,
+    );
+    return () => {
+      window.removeEventListener(
+        "recommendations-updated",
+        handleRecommendationsUpdated,
+      );
+    };
+  }, []);
+
   // Reveal on scroll animation
   useEffect(() => {
     const nodes = document.querySelectorAll(".reveal-on-scroll");
