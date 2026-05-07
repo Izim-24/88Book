@@ -1,12 +1,19 @@
 import { useState } from "react";
 import { BookCard, Book } from "./BookCard";
-import { Search, SlidersHorizontal } from "lucide-react";
+import {
+  Search,
+  SlidersHorizontal,
+  Sparkles,
+  TrendingUp,
+  BookOpen,
+} from "lucide-react";
 
 interface BrowsePageProps {
   books: Book[];
   onAddToCart: (book: Book) => void;
   onViewDetails?: (book: Book) => void;
   initialCategory?: string;
+  initialSection?: "all" | "new-arrivals" | "bestsellers";
   onToggleWishlist?: (book: Book) => void;
   wishlist?: Book[];
 }
@@ -24,16 +31,26 @@ const categories = [
   "Classic",
 ];
 
+const sections = [
+  { id: "all" as const, label: "All Books", icon: BookOpen },
+  { id: "new-arrivals" as const, label: "New Arrivals", icon: Sparkles },
+  { id: "bestsellers" as const, label: "Bestsellers", icon: TrendingUp },
+];
+
 export function BrowsePage({
   books,
   onAddToCart,
   onViewDetails,
   initialCategory = "All",
+  initialSection = "all",
   onToggleWishlist,
   wishlist,
 }: BrowsePageProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
+  const [activeSection, setActiveSection] = useState<
+    "all" | "new-arrivals" | "bestsellers"
+  >(initialSection);
   const [sortBy, setSortBy] = useState<
     "title" | "price-low" | "price-high" | "rating"
   >("title");
@@ -52,8 +69,20 @@ export function BrowsePage({
     image_url: book.image_url,
   }));
 
+  // Apply section filter first
+  let sectionBooks = [...formattedBooks];
+  if (activeSection === "new-arrivals") {
+    sectionBooks = [...formattedBooks]
+      .sort((a, b) => Number(b.id) - Number(a.id))
+      .slice(0, 12);
+  } else if (activeSection === "bestsellers") {
+    sectionBooks = [...formattedBooks]
+      .sort((a, b) => (Number(b.rating) || 0) - (Number(a.rating) || 0))
+      .slice(0, 12);
+  }
+
   // Filter books
-  const filteredBooks = formattedBooks.filter((book) => {
+  const filteredBooks = sectionBooks.filter((book) => {
     const matchesSearch =
       book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       book.author.toLowerCase().includes(searchQuery.toLowerCase());
@@ -82,7 +111,41 @@ export function BrowsePage({
   return (
     <main className="py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
-        <h1 className="mb-8">Browse Books</h1>
+        <h1 className="mb-6">Browse Books</h1>
+
+        {/* Section Tabs */}
+        <div className="mb-8">
+          <div className="flex gap-2 p-1.5 bg-secondary/50 rounded-xl w-fit border border-border">
+            {sections.map((section) => {
+              const Icon = section.icon;
+              const isActive = activeSection === section.id;
+              return (
+                <button
+                  key={section.id}
+                  onClick={() => setActiveSection(section.id)}
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                    isActive
+                      ? "bg-primary text-primary-foreground shadow-md"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  {section.label}
+                </button>
+              );
+            })}
+          </div>
+          {activeSection === "new-arrivals" && (
+            <p className="mt-3 text-sm text-muted-foreground">
+              ✨ Showing the latest books added to our collection
+            </p>
+          )}
+          {activeSection === "bestsellers" && (
+            <p className="mt-3 text-sm text-muted-foreground">
+              🔥 Showing the highest rated books loved by our readers
+            </p>
+          )}
+        </div>
 
         {/* Search and Filter Bar */}
         <div className="mb-8 space-y-4">
@@ -157,7 +220,9 @@ export function BrowsePage({
                 onAddToCart={onAddToCart}
                 onViewDetails={onViewDetails}
                 onToggleWishlist={onToggleWishlist}
-                isWishlisted={wishlist?.some((w) => w.id.toString() === book.id.toString())}
+                isWishlisted={wishlist?.some(
+                  (w) => w.id.toString() === book.id.toString(),
+                )}
               />
             ))}
           </div>
@@ -170,6 +235,7 @@ export function BrowsePage({
               onClick={() => {
                 setSearchQuery("");
                 setSelectedCategory("All");
+                setActiveSection("all");
               }}
               className="mt-4 text-primary hover:underline"
             >

@@ -39,24 +39,7 @@ export function Navigation({
               Categories
             </button>
 
-            <div className="hidden md:flex items-center gap-6">
-              <button 
-                onClick={() => onNavigate("new-arrivals")}
-                className={`transition-colors font-medium ${
-                  currentPage === "new-arrivals" ? "text-foreground" : "text-muted-foreground hover:text-foreground/80"
-                }`}
-              >
-                New Arrivals
-              </button>
-              <button 
-                onClick={() => onNavigate("bestsellers")}
-                className={`transition-colors font-medium ${
-                  currentPage === "bestsellers" ? "text-foreground" : "text-muted-foreground hover:text-foreground/80"
-                }`}
-              >
-                Bestsellers
-              </button>
-            </div>
+
           </div>
 
           <div className="hidden lg:flex flex-1 max-w-md">
