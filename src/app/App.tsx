@@ -288,6 +288,8 @@ function AppContent() {
 
   const handleTopSearch = (query: string) => {
     setBrowseSearchQuery(query);
+    // Global navbar search should search across all categories.
+    setSelectedCategory("All");
     if (currentPage !== "browse") {
       handleNavigate("browse");
     }

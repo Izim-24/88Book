@@ -89,9 +89,11 @@ export function BrowsePage({
 
   // Filter books
   const filteredBooks = sectionBooks.filter((book) => {
+    const normalizedQuery = searchQuery.toLowerCase();
     const matchesSearch =
-      book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      book.author.toLowerCase().includes(searchQuery.toLowerCase());
+      book.title.toLowerCase().includes(normalizedQuery) ||
+      book.author.toLowerCase().includes(normalizedQuery) ||
+      (book.category || "").toLowerCase().includes(normalizedQuery);
 
     const matchesCategory =
       selectedCategory === "All" || book.category === selectedCategory;
