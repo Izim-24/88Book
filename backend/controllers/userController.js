@@ -170,12 +170,12 @@ export const addAddress = async (req, res) => {
     const { label, name, street, city, state, zipCode, country, isDefault } = req.body;
     
     if (isDefault) {
-      await pool.query("UPDATE user_addresses SET is_default = false WHERE user_id = $1", [userId]);
+      await pool.query("UPDATE user_addresses SET is_default = 0 WHERE user_id = $1", [userId]);
     }
     
     const insertResult = await pool.query(
       "INSERT INTO user_addresses (user_id, label, name, street, city, state, zip_code, country, is_default) OUTPUT INSERTED.id VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
-      [userId, label, name, street, city, state, zipCode, country, isDefault || false]
+      [userId, label, name, street, city, state, zipCode, country, isDefault || 0]
     );
     const newAddressId = insertResult.rows[0].id;
     const result = await pool.query(
@@ -197,7 +197,7 @@ export const updateAddress = async (req, res) => {
     const { label, name, street, city, state, zipCode, country, isDefault } = req.body;
     
     if (isDefault) {
-      await pool.query("UPDATE user_addresses SET is_default = false WHERE user_id = $1 AND id != $2", [userId, id]);
+      await pool.query("UPDATE user_addresses SET is_default = 0 WHERE user_id = $1 AND id != $2", [userId, id]);
     }
     
     const updateResult = await pool.query(

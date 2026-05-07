@@ -14,7 +14,7 @@ export const getSellerBooks = async (req, res) => {
     );
 
     const countResult = await pool.query(
-      "SELECT COUNT(*) FROM books WHERE seller_id = $1",
+      "SELECT COUNT(*) AS count FROM books WHERE seller_id = $1",
       [sellerId],
     );
 
@@ -110,7 +110,7 @@ export const updateOrderStatus = async (req, res) => {
 
     // Verify seller owns items in this order
     const ownershipResult = await pool.query(
-      `SELECT COUNT(*) FROM order_items WHERE order_id = $1 AND seller_id = $2`,
+      `SELECT COUNT(*) AS count FROM order_items WHERE order_id = $1 AND seller_id = $2`,
       [orderId, sellerId],
     );
 
