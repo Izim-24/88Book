@@ -310,6 +310,15 @@ function AppContent() {
   // Filtered books for special pages
   const newArrivals = [...books].sort((a, b) => b.id - a.id).slice(0, 12);
   const bestsellers = [...books].sort((a, b) => (Number(b.rating) || 0) - (Number(a.rating) || 0)).slice(0, 12);
+  const searchSuggestions = Array.from(
+    new Set(
+      [
+        ...books.map((book: any) => book.title),
+        ...books.map((book: any) => book.author),
+        ...books.map((book: any) => book.category),
+      ].filter(Boolean),
+    ),
+  ).slice(0, 30);
 
   return (
     <div className="min-h-screen bg-background">
@@ -322,6 +331,7 @@ function AppContent() {
         canGoBack={pageHistory.length > 0}
         onGoBack={handleGoBack}
         onSearchSubmit={handleTopSearch}
+        searchSuggestions={searchSuggestions}
       />
 
       {currentPage === "home" && (
@@ -562,6 +572,7 @@ function AppContent() {
                     rating: Number(book.rating) || 4.5,
                     description: book.description || "No description available"
                   }}
+                  badge="New"
                   onAddToCart={handleAddToCart}
                   onViewDetails={(b) => {
                     setSelectedBook(b);
@@ -591,6 +602,7 @@ function AppContent() {
                     rating: Number(book.rating) || 4.5,
                     description: book.description || "No description available"
                   }}
+                  badge="Bestseller"
                   onAddToCart={handleAddToCart}
                   onViewDetails={(b) => {
                     setSelectedBook(b);

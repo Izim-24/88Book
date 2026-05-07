@@ -19,11 +19,10 @@ interface BookCardProps {
   onViewDetails?: (book: Book) => void;
   onToggleWishlist?: (book: Book) => void;
   isWishlisted?: boolean;
+  badge?: string;
 }
 
-export function BookCard({ book, onAddToCart, onViewDetails, onToggleWishlist, isWishlisted }: BookCardProps) {
-  const badges = ["Bestseller", "New", "-20%"];
-  const badge = badges[Number(book.id) % badges.length];
+export function BookCard({ book, onAddToCart, onViewDetails, onToggleWishlist, isWishlisted, badge }: BookCardProps) {
   const handleCardClick = () => {
     console.log("Card clicked, book:", book);
     onViewDetails?.(book);
@@ -45,9 +44,11 @@ export function BookCard({ book, onAddToCart, onViewDetails, onToggleWishlist, i
       className="book-card group relative cursor-pointer"
       onClick={handleCardClick}
     >
-      <span className="absolute top-3 left-3 z-10 rounded-full bg-accent text-accent-foreground text-[11px] px-2.5 py-1 font-semibold tracking-wide shadow-sm">
-        {badge}
-      </span>
+      {badge && (
+        <span className="absolute top-3 left-3 z-10 rounded-full bg-accent text-accent-foreground text-[11px] px-2.5 py-1 font-semibold tracking-wide shadow-sm">
+          {badge}
+        </span>
+      )}
       <button
         onClick={handleWishlistClick}
         className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-background/90 border border-border flex items-center justify-center hover:bg-background transition-colors"

@@ -10,6 +10,7 @@ interface NavigationProps {
   canGoBack?: boolean;
   onGoBack?: () => void;
   onSearchSubmit?: (query: string) => void;
+  searchSuggestions?: string[];
 }
 
 export function Navigation({
@@ -21,8 +22,10 @@ export function Navigation({
   canGoBack = false,
   onGoBack,
   onSearchSubmit,
+  searchSuggestions = [],
 }: NavigationProps) {
   const [query, setQuery] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   useEffect(() => {
     if (currentPage !== "browse") {
@@ -33,7 +36,16 @@ export function Navigation({
   const handleSearchSubmit = (e: FormEvent) => {
     e.preventDefault();
     onSearchSubmit?.(query.trim());
+    setShowSuggestions(false);
   };
+
+  const filteredSuggestions = query.trim()
+    ? searchSuggestions
+        .filter((item) =>
+          item.toLowerCase().includes(query.trim().toLowerCase()),
+        )
+        .slice(0, 6)
+    : [];
 
   return (
     <nav className="sticky top-0 z-50 bg-background/85 backdrop-blur-xl border-b border-border">
@@ -73,17 +85,39 @@ export function Navigation({
 
           </div>
 
-          <form onSubmit={handleSearchSubmit} className="hidden lg:flex flex-1 max-w-md">
+          <form onSubmit={handleSearchSubmit} className="hidden lg:flex flex-1 max-w-md relative">
             <div className="w-full h-11 px-4 rounded-full border border-border bg-secondary/70 text-sm flex items-center gap-2 hover:border-primary focus-within:border-primary transition-colors">
               <Search className="w-4 h-4" />
               <input
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
+                onFocus={() => setShowSuggestions(true)}
+                onBlur={() => {
+                  setTimeout(() => setShowSuggestions(false), 120);
+                }}
                 placeholder="Search by title, author, category..."
                 className="w-full bg-transparent outline-none placeholder:text-muted-foreground"
               />
             </div>
+            {showSuggestions && filteredSuggestions.length > 0 && (
+              <div className="absolute top-12 left-0 right-0 bg-background border border-border rounded-xl shadow-lg z-50 py-2">
+                {filteredSuggestions.map((suggestion) => (
+                  <button
+                    key={suggestion}
+                    type="button"
+                    onClick={() => {
+                      setQuery(suggestion);
+                      onSearchSubmit?.(suggestion);
+                      setShowSuggestions(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm hover:bg-secondary transition-colors"
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+            )}
           </form>
 
           <div className="flex items-center gap-4">

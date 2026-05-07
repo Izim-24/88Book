@@ -2,6 +2,14 @@ import pool from "../config/database.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
+const verifyPassword = async (rawPassword, storedPassword) => {
+  // Backward compatibility for seeded/dev accounts with plain-text password.
+  if (storedPassword?.startsWith?.("$2")) {
+    return bcrypt.compare(rawPassword, storedPassword);
+  }
+  return rawPassword === storedPassword;
+};
+
 export const registerUser = async (req, res) => {
   try {
     const { email, password, fullName } = req.body;
@@ -89,7 +97,7 @@ export const loginUser = async (req, res) => {
     }
 
     const user = result.rows[0];
-    const validPassword = await bcrypt.compare(password, user.password);
+    const validPassword = await verifyPassword(password, user.password);
 
     if (!validPassword) {
       return res.status(401).json({
