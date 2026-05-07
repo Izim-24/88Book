@@ -42,7 +42,7 @@ export function BookCard({ book, onAddToCart, onViewDetails, onToggleWishlist, i
 
   return (
     <div
-      className="reveal-on-scroll book-card group relative cursor-pointer"
+      className="book-card group relative cursor-pointer"
       onClick={handleCardClick}
     >
       <span className="absolute top-3 left-3 z-10 rounded-full bg-accent text-accent-foreground text-[11px] px-2.5 py-1 font-semibold tracking-wide shadow-sm">

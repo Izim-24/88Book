@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { BookCard, Book } from "./BookCard";
 import {
   Search,
@@ -13,6 +13,7 @@ interface BrowsePageProps {
   onAddToCart: (book: Book) => void;
   onViewDetails?: (book: Book) => void;
   initialCategory?: string;
+  initialSearchQuery?: string;
   initialSection?: "all" | "new-arrivals" | "bestsellers";
   onToggleWishlist?: (book: Book) => void;
   wishlist?: Book[];
@@ -42,11 +43,12 @@ export function BrowsePage({
   onAddToCart,
   onViewDetails,
   initialCategory = "All",
+  initialSearchQuery = "",
   initialSection = "all",
   onToggleWishlist,
   wishlist,
 }: BrowsePageProps) {
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(initialSearchQuery);
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [activeSection, setActiveSection] = useState<
     "all" | "new-arrivals" | "bestsellers"
@@ -55,6 +57,10 @@ export function BrowsePage({
     "title" | "price-low" | "price-high" | "rating"
   >("title");
   const [showFilters, setShowFilters] = useState(false);
+
+  useEffect(() => {
+    setSearchQuery(initialSearchQuery);
+  }, [initialSearchQuery]);
 
   // Format books from API response to match Book interface
   const formattedBooks = books.map((book: any) => ({
@@ -83,9 +89,11 @@ export function BrowsePage({
 
   // Filter books
   const filteredBooks = sectionBooks.filter((book) => {
+    const normalizedQuery = searchQuery.toLowerCase();
     const matchesSearch =
-      book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      book.author.toLowerCase().includes(searchQuery.toLowerCase());
+      book.title.toLowerCase().includes(normalizedQuery) ||
+      book.author.toLowerCase().includes(normalizedQuery) ||
+      (book.category || "").toLowerCase().includes(normalizedQuery);
 
     const matchesCategory =
       selectedCategory === "All" || book.category === selectedCategory;
