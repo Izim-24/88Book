@@ -73,16 +73,31 @@ export function BrowsePage({
     rating: book.rating || 4.5, // Default rating if not in API
     description: book.description || "No description available",
     image_url: book.image_url,
+    created_at: book.created_at,
   }));
 
   // Apply section filter first
   let sectionBooks = [...formattedBooks];
+  let sectionBadge: string | undefined;
   if (activeSection === "new-arrivals") {
+    sectionBadge = "New";
     sectionBooks = [...formattedBooks]
-      .sort((a, b) => Number(b.id) - Number(a.id))
+      .filter((book: any) => {
+        if (!book.created_at) return true;
+        const createdAt = new Date(book.created_at).getTime();
+        const daysDiff = (Date.now() - createdAt) / (1000 * 60 * 60 * 24);
+        return daysDiff <= 45;
+      })
+      .sort((a: any, b: any) => {
+        const aTime = a.created_at ? new Date(a.created_at).getTime() : Number(a.id);
+        const bTime = b.created_at ? new Date(b.created_at).getTime() : Number(b.id);
+        return bTime - aTime;
+      })
       .slice(0, 12);
   } else if (activeSection === "bestsellers") {
+    sectionBadge = "Bestseller";
     sectionBooks = [...formattedBooks]
+      .filter((book) => Number(book.rating) >= 4.5)
       .sort((a, b) => (Number(b.rating) || 0) - (Number(a.rating) || 0))
       .slice(0, 12);
   }
@@ -225,6 +240,7 @@ export function BrowsePage({
               <BookCard
                 key={book.id}
                 book={book}
+                badge={sectionBadge}
                 onAddToCart={onAddToCart}
                 onViewDetails={onViewDetails}
                 onToggleWishlist={onToggleWishlist}

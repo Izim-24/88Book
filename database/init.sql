@@ -128,25 +128,28 @@ GO
 -- ------------------------------------------------------------
 -- Seed data (safe to rerun)
 -- ------------------------------------------------------------
+-- Default admin credentials for local development:
+--   Email: admin@bookhaven.local
+--   Password: Admin@123
 
 IF NOT EXISTS (SELECT 1 FROM dbo.users WHERE email = N'admin@bookhaven.local')
 BEGIN
     INSERT INTO dbo.users (email, password, full_name, role)
-    VALUES (N'admin@bookhaven.local', N'$2a$10$abcdefghijklmnopqrstuv1234567890abcdEFGHijklmnopQR', N'BookHaven Admin', N'admin');
+    VALUES (N'admin@bookhaven.local', N'Admin@123', N'BookHaven Admin', N'admin');
 END;
 GO
 
 IF NOT EXISTS (SELECT 1 FROM dbo.users WHERE email = N'seller@bookhaven.local')
 BEGIN
     INSERT INTO dbo.users (email, password, full_name, role)
-    VALUES (N'seller@bookhaven.local', N'$2a$10$abcdefghijklmnopqrstuv1234567890abcdEFGHijklmnopQR', N'Demo Seller', N'seller');
+    VALUES (N'seller@bookhaven.local', N'Seller@123', N'Demo Seller', N'seller');
 END;
 GO
 
 IF NOT EXISTS (SELECT 1 FROM dbo.users WHERE email = N'buyer@bookhaven.local')
 BEGIN
     INSERT INTO dbo.users (email, password, full_name, role)
-    VALUES (N'buyer@bookhaven.local', N'$2a$10$abcdefghijklmnopqrstuv1234567890abcdEFGHijklmnopQR', N'Demo Buyer', N'buyer');
+    VALUES (N'buyer@bookhaven.local', N'Buyer@123', N'Demo Buyer', N'buyer');
 END;
 GO
 
