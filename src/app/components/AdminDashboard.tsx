@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Trash2, Edit2, Plus, ShieldCheck, Users } from "lucide-react";
+import { Eye, Trash2, Edit2, Plus, ShieldCheck, Users } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -28,9 +28,11 @@ interface AdminBook {
   id: number;
   title: string;
   author: string;
+  description?: string;
   price: number;
   quantity: number;
   category: string;
+  isbn?: string;
   image_url: string;
 }
 
@@ -46,16 +48,32 @@ interface AdminDashboardProps {
   currentUserId?: number | string;
 }
 
+interface UserForm {
+  id?: number;
+  fullName: string;
+  email: string;
+  password: string;
+  role: "admin" | "buyer";
+}
+
 export function AdminDashboard({ currentUserId }: AdminDashboardProps) {
   const [books, setBooks] = useState<AdminBook[]>([]);
   const [users, setUsers] = useState<AdminUser[]>([]);
+  const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [loading, setLoading] = useState(false);
   const [usersLoading, setUsersLoading] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [editingUser, setEditingUser] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [userError, setUserError] = useState("");
   const [userSuccess, setUserSuccess] = useState("");
+  const [userForm, setUserForm] = useState<UserForm>({
+    fullName: "",
+    email: "",
+    password: "",
+    role: "buyer",
+  });
   const [formData, setFormData] = useState<BookForm>({
     title: "",
     author: "",
@@ -122,6 +140,81 @@ export function AdminDashboard({ currentUserId }: AdminDashboardProps) {
       setUserSuccess("User role updated");
     } else {
       setUserError(response.message || "Failed to update user role");
+    }
+  };
+
+  const resetUserForm = () => {
+    setUserForm({
+      fullName: "",
+      email: "",
+      password: "",
+      role: "buyer",
+    });
+    setEditingUser(false);
+  };
+
+  const handleUserSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setUserError("");
+    setUserSuccess("");
+
+    const payload = {
+      fullName: userForm.fullName,
+      email: userForm.email,
+      role: userForm.role,
+      ...(userForm.password ? { password: userForm.password } : {}),
+    };
+
+    const response =
+      editingUser && userForm.id
+        ? await adminAPI.updateUser(userForm.id, payload)
+        : await adminAPI.createUser({
+            ...payload,
+            password: userForm.password,
+          });
+
+    if (response.success) {
+      if (editingUser) {
+        setUsers((prev) =>
+          prev.map((user) => (user.id === userForm.id ? response.user : user)),
+        );
+        setUserSuccess("User updated");
+      } else {
+        setUsers((prev) => [response.user, ...prev]);
+        setUserSuccess("User created");
+      }
+      resetUserForm();
+    } else {
+      setUserError(response.message || "Failed to save user");
+    }
+  };
+
+  const handleEditUser = (user: AdminUser) => {
+    setSelectedUser(user);
+    setEditingUser(true);
+    setUserError("");
+    setUserSuccess("");
+    setUserForm({
+      id: user.id,
+      fullName: user.full_name,
+      email: user.email,
+      password: "",
+      role: user.role,
+    });
+  };
+
+  const handleDeleteUser = async (userId: number) => {
+    if (!confirm("Are you sure you want to delete this user?")) return;
+
+    setUserError("");
+    setUserSuccess("");
+    const response = await adminAPI.deleteUser(userId);
+    if (response.success) {
+      setUsers((prev) => prev.filter((user) => user.id !== userId));
+      if (selectedUser?.id === userId) setSelectedUser(null);
+      setUserSuccess("User deleted");
+    } else {
+      setUserError(response.message || "Failed to delete user");
     }
   };
 
@@ -197,10 +290,10 @@ export function AdminDashboard({ currentUserId }: AdminDashboardProps) {
       id: book.id.toString(),
       title: book.title,
       author: book.author,
-      description: "",
+      description: book.description || "",
       price: book.price.toString(),
       category: book.category,
-      isbn: "",
+      isbn: book.isbn || "",
       quantity: book.quantity.toString(),
       image_url: book.image_url,
     });
@@ -263,53 +356,160 @@ export function AdminDashboard({ currentUserId }: AdminDashboardProps) {
                 {userSuccess}
               </div>
             )}
-            {usersLoading ? (
-              <p className="text-muted-foreground">Loading users...</p>
-            ) : (
-              <div className="space-y-3">
-                {users.map((user) => {
-                  const isCurrentUser = Number(user.id) === Number(currentUserId);
-                  return (
-                    <div
-                      key={user.id}
-                      className="border border-border rounded-lg p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-                    >
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="font-semibold">{user.full_name}</p>
-                          {user.role === "admin" && (
-                            <ShieldCheck className="w-4 h-4 text-primary" />
-                          )}
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          {user.email}
-                        </p>
-                      </div>
-                      <select
-                        value={user.role}
-                        disabled={isCurrentUser}
-                        onChange={(event) =>
-                          handleRoleChange(
-                            user.id,
-                            event.target.value as "admin" | "buyer",
-                          )
-                        }
-                        className="h-10 rounded-md border border-border bg-background px-3 text-sm disabled:opacity-60"
-                        aria-label={`Role for ${user.email}`}
-                        title={
-                          isCurrentUser
-                            ? "You cannot change your own role"
-                            : "Change role"
-                        }
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <form onSubmit={handleUserSubmit} className="space-y-3">
+                <div className="space-y-2">
+                  <Label htmlFor="userFullName">Full Name</Label>
+                  <Input
+                    id="userFullName"
+                    value={userForm.fullName}
+                    onChange={(e) =>
+                      setUserForm({ ...userForm, fullName: e.target.value })
+                    }
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="userEmail">Email</Label>
+                  <Input
+                    id="userEmail"
+                    type="email"
+                    value={userForm.email}
+                    onChange={(e) =>
+                      setUserForm({ ...userForm, email: e.target.value })
+                    }
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="userPassword">
+                    {editingUser ? "New Password" : "Password"}
+                  </Label>
+                  <Input
+                    id="userPassword"
+                    type="password"
+                    value={userForm.password}
+                    onChange={(e) =>
+                      setUserForm({ ...userForm, password: e.target.value })
+                    }
+                    required={!editingUser}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="userRole">Role</Label>
+                  <select
+                    id="userRole"
+                    value={userForm.role}
+                    onChange={(e) =>
+                      setUserForm({
+                        ...userForm,
+                        role: e.target.value as "admin" | "buyer",
+                      })
+                    }
+                    className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
+                  >
+                    <option value="buyer">Buyer</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+                <div className="flex gap-2">
+                  <Button type="submit" className="flex-1">
+                    {editingUser ? "Update User" : "Add User"}
+                  </Button>
+                  {editingUser && (
+                    <Button type="button" variant="outline" onClick={resetUserForm}>
+                      Cancel
+                    </Button>
+                  )}
+                </div>
+              </form>
+
+              <div className="lg:col-span-2 space-y-3">
+                {selectedUser && (
+                  <div className="rounded-lg border border-border p-4 bg-secondary/40">
+                    <p className="font-semibold">{selectedUser.full_name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedUser.email}
+                    </p>
+                    <p className="text-sm">Role: {selectedUser.role}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Created:{" "}
+                      {selectedUser.created_at
+                        ? new Date(selectedUser.created_at).toLocaleDateString()
+                        : "N/A"}
+                    </p>
+                  </div>
+                )}
+                {usersLoading ? (
+                  <p className="text-muted-foreground">Loading users...</p>
+                ) : (
+                  users.map((user) => {
+                    const isCurrentUser =
+                      Number(user.id) === Number(currentUserId);
+                    return (
+                      <div
+                        key={user.id}
+                        className="border border-border rounded-lg p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                       >
-                        <option value="buyer">Buyer</option>
-                        <option value="admin">Admin</option>
-                      </select>
-                    </div>
-                  );
-                })}
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="font-semibold">{user.full_name}</p>
+                            {user.role === "admin" && (
+                              <ShieldCheck className="w-4 h-4 text-primary" />
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            {user.email}
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <select
+                            value={user.role}
+                            disabled={isCurrentUser}
+                            onChange={(event) =>
+                              handleRoleChange(
+                                user.id,
+                                event.target.value as "admin" | "buyer",
+                              )
+                            }
+                            className="h-10 rounded-md border border-border bg-background px-3 text-sm disabled:opacity-60"
+                            aria-label={`Role for ${user.email}`}
+                          >
+                            <option value="buyer">Buyer</option>
+                            <option value="admin">Admin</option>
+                          </select>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setSelectedUser(user)}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEditUser(user)}
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="destructive"
+                            disabled={isCurrentUser}
+                            onClick={() => handleDeleteUser(user.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
               </div>
-            )}
+            </div>
           </CardContent>
         </Card>
 
@@ -419,13 +619,20 @@ export function AdminDashboard({ currentUserId }: AdminDashboardProps) {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="imageUrl">Image URL</Label>
+                    <Label htmlFor="imageUrl">Cover Image URL</Label>
                     <Input
                       id="imageUrl"
                       placeholder="https://example.com/image.jpg"
                       value={formData.image_url}
                       onChange={handleInputChange}
                     />
+                    {formData.image_url && (
+                      <img
+                        src={formData.image_url}
+                        alt="Cover preview"
+                        className="h-32 w-24 rounded-md border border-border object-cover"
+                      />
+                    )}
                   </div>
 
                   <div className="flex gap-2">
@@ -467,21 +674,33 @@ export function AdminDashboard({ currentUserId }: AdminDashboardProps) {
                     {books.map((book) => (
                       <div
                         key={book.id}
-                        className="border border-border rounded-lg p-4 flex items-start justify-between"
+                        className="border border-border rounded-lg p-4 flex items-start justify-between gap-4"
                       >
-                        <div className="flex-1">
-                          <h3 className="font-semibold">{book.title}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            {book.author}
-                          </p>
-                          <div className="flex gap-4 mt-2 text-sm">
-                            <span>Category: {book.category || "N/A"}</span>
-                            <span>
-                              Price: ${parseFloat(book.price as any).toFixed(2)}
-                            </span>
-                            <span className="text-blue-600">
-                              Stock: {book.quantity}
-                            </span>
+                        <div className="flex gap-4 flex-1 min-w-0">
+                          <img
+                            src={
+                              book.image_url ||
+                              "https://via.placeholder.com/120x160?text=Book"
+                            }
+                            alt={book.title}
+                            className="h-24 w-16 rounded-md border border-border object-cover flex-shrink-0"
+                          />
+                          <div className="min-w-0">
+                            <h3 className="font-semibold truncate">
+                              {book.title}
+                            </h3>
+                            <p className="text-sm text-muted-foreground">
+                              {book.author}
+                            </p>
+                            <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-sm">
+                              <span>Category: {book.category || "N/A"}</span>
+                              <span>
+                                Price: ${parseFloat(book.price as any).toFixed(2)}
+                              </span>
+                              <span className="text-blue-600">
+                                Stock: {book.quantity}
+                              </span>
+                            </div>
                           </div>
                         </div>
                         <div className="flex gap-2">
