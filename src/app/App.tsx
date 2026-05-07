@@ -42,7 +42,7 @@ function AppContent() {
   const [browseSearchQuery, setBrowseSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [books, setBooks] = useState<Book[]>([]);
-  const [staffPicks, setStaffPicks] = useState<Book[]>([]);
+  const [recommendations, setRecommendations] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -93,9 +93,9 @@ function AppContent() {
         if (response.success) {
           setBooks(response.books);
         }
-        const picksResponse = await booksAPI.getStaffPicks();
+        const picksResponse = await booksAPI.getRecommendations();
         if (picksResponse.success) {
-          setStaffPicks(picksResponse.books || []);
+          setRecommendations(picksResponse.books || []);
         }
       } catch (error) {
         console.error("Error loading books:", error);
@@ -315,7 +315,7 @@ function AppContent() {
   // Filtered books for special pages
   const newArrivals = [...books].sort((a, b) => b.id - a.id).slice(0, 12);
   const bestsellers = [...books].sort((a, b) => (Number(b.rating) || 0) - (Number(a.rating) || 0)).slice(0, 12);
-  const displayedStaffPicks = (staffPicks.length > 0 ? staffPicks : books.slice(4, 7)).map((book: any) => ({
+  const displayedRecommendations = (recommendations.length > 0 ? recommendations : books.slice(4, 7)).map((book: any) => ({
     ...book,
     id: book.id.toString(),
     coverImage:
@@ -464,18 +464,17 @@ function AppContent() {
             </div>
           </section>
 
-          {/* Staff Picks */}
+          {/* Recommendations */}
           <section className="section-block section-soft px-4 sm:px-6 lg:px-8">
             <div className="max-w-7xl mx-auto">
-              <h2 className="text-3xl sm:text-4xl font-bold mb-2">Staff Picks</h2>
+              <h2 className="text-3xl sm:text-4xl font-bold mb-2">Recommendations</h2>
               <p className="text-muted-foreground mb-8">
-                Recommendations handpicked by the BookHaven team from readers'
-                favorite titles.
+                Handpicked titles from BookHaven's favorite reads.
               </p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                {displayedStaffPicks.map((book) => (
+                {displayedRecommendations.map((book) => (
                   <button
-                    key={`staff-${book.id}`}
+                    key={`recommendation-${book.id}`}
                     type="button"
                     onClick={() => {
                       setSelectedBook(book);
@@ -484,7 +483,7 @@ function AppContent() {
                     className="reveal-on-scroll bg-card border border-border rounded-2xl p-5 text-left hover:border-primary hover:shadow-md transition-all"
                   >
                     <p className="text-xs uppercase tracking-wide text-primary mb-2">
-                      Staff recommends
+                      Recommended
                     </p>
                     <h3 className="text-xl font-semibold mb-1">{book.title}</h3>
                     <p className="text-sm text-muted-foreground mb-4">
@@ -681,8 +680,8 @@ function AppContent() {
         />
       )}
 
-      {currentPage === "admin" && ["admin", "staff"].includes(user?.role) && (
-        <AdminDashboard currentUserId={user?.id} currentUserRole={user?.role} />
+      {currentPage === "admin" && user?.role === "admin" && (
+        <AdminDashboard currentUserId={user?.id} />
       )}
 
       <BookDetailsModal

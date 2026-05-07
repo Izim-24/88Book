@@ -105,7 +105,7 @@ export const booksAPI = {
       `/books?page=${page}&limit=${limit}${search ? `&search=${search}` : ""}${category ? `&category=${category}` : ""}${minPrice ? `&minPrice=${minPrice}` : ""}${maxPrice ? `&maxPrice=${maxPrice}` : ""}${sortBy ? `&sortBy=${sortBy}` : ""}`,
     ),
   getById: (id) => apiClient.get(`/books/${id}`),
-  getStaffPicks: () => apiClient.get("/books/staff-picks"),
+  getRecommendations: () => apiClient.get("/books/recommendations"),
   create: (book) => apiClient.post("/books", book),
   update: (id, book) => apiClient.put(`/books/${id}`, book),
   delete: (id) => apiClient.delete(`/books/${id}`),
@@ -145,9 +145,9 @@ export const adminAPI = {
     apiClient.put(`/admin/users/${userId}/role`, { role }),
   getBooks: (page = 1, limit = 20) =>
     apiClient.get(`/admin/books?page=${page}&limit=${limit}`),
-  getStaffPicks: () => apiClient.get("/admin/staff-picks"),
-  updateStaffPicks: (bookIds) =>
-    apiClient.put("/admin/staff-picks", { bookIds }),
+  getRecommendations: () => apiClient.get("/admin/recommendations"),
+  updateRecommendations: (bookIds) =>
+    apiClient.put("/admin/recommendations", { bookIds }),
   getOrders: () => apiClient.get("/admin/orders"),
   getStats: () => apiClient.get("/admin/stats"),
   updateOrderStatus: (orderId, status) =>

@@ -118,11 +118,6 @@ export function AccountPage({
       email: "buyer@bookhaven.local",
       password: "Buyer@123",
     },
-    {
-      label: "Staff",
-      email: "staff@bookhaven.local",
-      password: "Staff@123",
-    },
   ];
 
   const handleSaveProfile = () => {

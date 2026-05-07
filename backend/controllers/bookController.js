@@ -129,7 +129,7 @@ export const getStaffPicks = async (req, res) => {
     console.error(error);
     res.status(500).json({
       success: false,
-      message: "Error fetching staff picks",
+      message: "Error fetching recommendations",
     });
   }
 };

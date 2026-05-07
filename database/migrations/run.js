@@ -104,13 +104,6 @@ const createTables = async () => {
       END
     `);
 
-    await pool.query(`
-      IF NOT EXISTS (SELECT 1 FROM users WHERE email = 'staff@bookhaven.local')
-      BEGIN
-        INSERT INTO users (email, password, full_name, role)
-        VALUES ('staff@bookhaven.local', 'Staff@123', 'Demo Staff', 'staff');
-      END
-    `);
   } catch (error) {
     console.error("❌ Error creating tables:", error);
     process.exit(1);

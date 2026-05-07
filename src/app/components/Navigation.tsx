@@ -130,7 +130,7 @@ export function Navigation({
             >
               <Search className="w-5 h-5" />
             </button>
-            {isLoggedIn && ["admin", "staff"].includes(userRole || "") && (
+            {isLoggedIn && userRole === "admin" && (
               <button
                 onClick={() => onNavigate("admin")}
                 className={`p-2 hover:bg-accent rounded-lg transition-colors ${

@@ -158,13 +158,6 @@ BEGIN
 END;
 GO
 
-IF NOT EXISTS (SELECT 1 FROM dbo.users WHERE email = N'staff@bookhaven.local')
-BEGIN
-    INSERT INTO dbo.users (email, password, full_name, role)
-    VALUES (N'staff@bookhaven.local', N'Staff@123', N'Demo Staff', N'staff');
-END;
-GO
-
 DECLARE @seedAdminId INT;
 SELECT TOP 1 @seedAdminId = id
 FROM dbo.users

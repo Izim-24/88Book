@@ -1,7 +1,7 @@
 import pool from "../config/database.js";
 import bcrypt from "bcryptjs";
 
-const editableRoles = ["admin", "staff", "buyer"];
+const editableRoles = ["admin", "buyer"];
 
 const ensureStaffPicksTable = async () => {
   await pool.query(`
@@ -51,7 +51,7 @@ export const createAdminUser = async (req, res) => {
     if (!editableRoles.includes(role)) {
       return res.status(400).json({
         success: false,
-        message: "Role must be admin, staff, or buyer",
+        message: "Role must be admin or buyer",
       });
     }
 
@@ -93,7 +93,7 @@ export const updateAdminUser = async (req, res) => {
     if (role && !editableRoles.includes(role)) {
       return res.status(400).json({
         success: false,
-        message: "Role must be admin, staff, or buyer",
+        message: "Role must be admin or buyer",
       });
     }
 
@@ -195,7 +195,7 @@ export const updateUserRole = async (req, res) => {
     if (!editableRoles.includes(role)) {
       return res.status(400).json({
         success: false,
-        message: "Role must be admin, staff, or buyer",
+        message: "Role must be admin or buyer",
       });
     }
 
@@ -284,7 +284,7 @@ export const getStaffPicks = async (req, res) => {
     console.error(error);
     res.status(500).json({
       success: false,
-      message: "Error fetching staff picks",
+      message: "Error fetching recommendations",
     });
   }
 };
@@ -323,14 +323,14 @@ export const updateStaffPicks = async (req, res) => {
 
     res.json({
       success: true,
-      message: "Staff picks updated",
+      message: "Recommendations updated",
       books: result.rows,
     });
   } catch (error) {
     console.error(error);
     res.status(500).json({
       success: false,
-      message: "Error updating staff picks",
+      message: "Error updating recommendations",
     });
   }
 };

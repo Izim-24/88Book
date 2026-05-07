@@ -22,9 +22,9 @@ router.put("/users/:userId", authenticateToken, authorizeRole("admin"), updateAd
 router.delete("/users/:userId", authenticateToken, authorizeRole("admin"), deleteAdminUser);
 router.put("/users/:userId/role", authenticateToken, authorizeRole("admin"), updateUserRole);
 
-router.get("/books", authenticateToken, authorizeRole("admin", "staff"), getAdminBooks);
-router.get("/staff-picks", authenticateToken, authorizeRole("admin", "staff"), getStaffPicks);
-router.put("/staff-picks", authenticateToken, authorizeRole("admin", "staff"), updateStaffPicks);
+router.get("/books", authenticateToken, authorizeRole("admin"), getAdminBooks);
+router.get("/recommendations", authenticateToken, authorizeRole("admin"), getStaffPicks);
+router.put("/recommendations", authenticateToken, authorizeRole("admin"), updateStaffPicks);
 
 router.get("/orders", authenticateToken, authorizeRole("admin"), getAdminOrders);
 router.get("/stats", authenticateToken, authorizeRole("admin"), getAdminStats);
