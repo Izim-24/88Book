@@ -4,11 +4,13 @@ export const getSellerBooks = async (req, res) => {
   try {
     const sellerId = req.user.userId;
     const { page = 1, limit = 20 } = req.query;
-    const offset = (page - 1) * limit;
+    const pageNumber = Number(page);
+    const pageSize = Number(limit);
+    const offset = (pageNumber - 1) * pageSize;
 
     const result = await pool.query(
-      "SELECT * FROM books WHERE seller_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3",
-      [sellerId, limit, offset],
+      "SELECT * FROM books WHERE seller_id = $1 ORDER BY created_at DESC OFFSET $2 ROWS FETCH NEXT $3 ROWS ONLY",
+      [sellerId, offset, pageSize],
     );
 
     const countResult = await pool.query(
@@ -20,8 +22,8 @@ export const getSellerBooks = async (req, res) => {
       success: true,
       books: result.rows,
       pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
+        page: pageNumber,
+        limit: pageSize,
         total: parseInt(countResult.rows[0].count),
       },
     });
@@ -41,21 +43,41 @@ export const getSellerOrders = async (req, res) => {
     const result = await pool.query(
       `SELECT 
         o.id, o.user_id, o.total_amount, o.status, o.created_at,
-        json_agg(json_build_object('bookId', oi.book_id, 'quantity', oi.quantity, 'price', oi.price, 'title', b.title)) as items,
         u.full_name, u.email
        FROM orders o
        JOIN order_items oi ON o.id = oi.order_id
-       JOIN books b ON oi.book_id = b.id
        JOIN users u ON o.user_id = u.id
        WHERE oi.seller_id = $1
-       GROUP BY o.id, u.full_name, u.email
+       GROUP BY o.id, o.user_id, o.total_amount, o.status, o.created_at, u.full_name, u.email
        ORDER BY o.created_at DESC`,
       [sellerId],
     );
 
+    const orders = await Promise.all(
+      result.rows.map(async (order) => {
+        const itemsResult = await pool.query(
+          `SELECT oi.book_id, oi.quantity, oi.price, b.title
+           FROM order_items oi
+           JOIN books b ON oi.book_id = b.id
+           WHERE oi.order_id = $1 AND oi.seller_id = $2`,
+          [order.id, sellerId],
+        );
+
+        return {
+          ...order,
+          items: itemsResult.rows.map((item) => ({
+            bookId: item.book_id,
+            quantity: item.quantity,
+            price: item.price,
+            title: item.title,
+          })),
+        };
+      }),
+    );
+
     res.json({
       success: true,
-      orders: result.rows,
+      orders,
     });
   } catch (error) {
     console.error(error);
@@ -100,7 +122,7 @@ export const updateOrderStatus = async (req, res) => {
     }
 
     const result = await pool.query(
-      "UPDATE orders SET status = $1 WHERE id = $2 RETURNING *",
+      "UPDATE orders SET status = $1, updated_at = GETDATE() OUTPUT INSERTED.* WHERE id = $2",
       [status, orderId],
     );
 
@@ -139,7 +161,7 @@ export const getSellerStats = async (req, res) => {
       `SELECT COUNT(*) as recent_orders
        FROM order_items oi
        JOIN orders o ON oi.order_id = o.id
-       WHERE oi.seller_id = $1 AND o.created_at >= NOW() - INTERVAL '30 days'`,
+       WHERE oi.seller_id = $1 AND o.created_at >= DATEADD(day, -30, GETDATE())`,
       [sellerId],
     );
 

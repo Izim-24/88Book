@@ -34,7 +34,7 @@ export const registerUser = async (req, res) => {
 
     // Insert user
     const result = await pool.query(
-      "INSERT INTO users (email, password, full_name, role) VALUES ($1, $2, $3, $4) RETURNING id, email, full_name, role",
+      "INSERT INTO users (email, password, full_name, role) OUTPUT INSERTED.id, INSERTED.email, INSERTED.full_name, INSERTED.role VALUES ($1, $2, $3, $4)",
       [email, hashedPassword, fullName, role],
     );
 
@@ -196,7 +196,7 @@ export const createAdminAccount = async (req, res) => {
 
     // Create admin account
     const result = await pool.query(
-      "INSERT INTO users (email, password, full_name, role) VALUES ($1, $2, $3, $4) RETURNING id, email, full_name, role",
+      "INSERT INTO users (email, password, full_name, role) OUTPUT INSERTED.id, INSERTED.email, INSERTED.full_name, INSERTED.role VALUES ($1, $2, $3, $4)",
       [email, hashedPassword, fullName, "admin"],
     );
 

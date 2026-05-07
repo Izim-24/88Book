@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - Node.js (v16+)
-- PostgreSQL (v12+)
+- SQL Server (2019+)
 - npm or yarn
 
 ## Installation
@@ -15,7 +15,7 @@ cp .env.example .env
 ```
 
 2. **Configure your environment variables in `.env`**:
-   - Set PostgreSQL credentials
+   - Set SQL Server credentials
    - Set JWT secret
    - Set FRONTEND_URL
 
@@ -25,10 +25,10 @@ cp .env.example .env
 npm install
 ```
 
-4. **Create PostgreSQL database**:
+4. **Create SQL Server database**:
 
 ```bash
-createdb book_store
+# Use SSMS and create a database named book_store
 ```
 
 5. **Run migrations to create tables**:

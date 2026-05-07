@@ -27,7 +27,7 @@ Your **complete, fully-functional book selling website** has been created with a
 - Seller interface
 - Account management
 
-### ✅ PostgreSQL Database
+### ✅ SQL Server Database
 
 - Fully normalized schema
 - Automatic relationships
@@ -92,26 +92,25 @@ Your Project/
 
 ## 🎯 First Time Setup
 
-### 1️⃣ Install PostgreSQL (Skip if using Docker)
+### 1️⃣ Install SQL Server + SSMS (Skip if already installed)
 
 Choose your OS:
 
 **Windows:**
 
-- Download: https://www.postgresql.org/download/windows/
+- Install SQL Server and SQL Server Management Studio (SSMS)
 - Run installer, note the password you set
 
 **macOS:**
 
 ```bash
-brew install postgresql
-brew services start postgresql
+brew install --cask microsoft-azure-data-studio
 ```
 
 **Linux:**
 
 ```bash
-sudo apt-get install postgresql postgresql-contrib
+sudo apt-get install mssql-tools18 unixodbc-dev
 ```
 
 ### 2️⃣ Setup Backend
@@ -127,7 +126,7 @@ copy .env.example .env  # Windows
 cp .env.example .env    # macOS/Linux
 
 # Edit .env file:
-# - Change DB_PASSWORD to your PostgreSQL password
+# - Change DB_PASSWORD to your SQL Server password
 # - Leave other values as-is
 ```
 
@@ -299,8 +298,7 @@ kill -9 <PID>
 ### "Cannot connect to database"
 
 ```bash
-# Check PostgreSQL is running
-pg_isready
+# Check SQL Server is running and reachable on 1433
 
 # Verify .env credentials match your setup
 ```
@@ -360,7 +358,7 @@ Frontend (React at :3000)
     ↓ (API calls)
 Backend API (Express at :5000)
     ↓ (Query)
-PostgreSQL Database
+SQL Server Database
     ↓
 Returns Data
     ↑
@@ -385,7 +383,7 @@ Displayed in Frontend
 2. **Review backend logs** (Terminal where backend runs)
 3. **Read documentation** (links above)
 4. **Check .env files** (credentials match setup)
-5. **Verify services running** (PostgreSQL, backend, frontend)
+5. **Verify services running** (SQL Server, backend, frontend)
 
 ---
 
@@ -457,7 +455,7 @@ Then open **http://localhost:5174** 🎉
 
 Your complete book selling website is ready. Everything works together:
 
-- **Database**: ✅ PostgreSQL with schema
+- **Database**: ✅ SQL Server with schema
 - **API**: ✅ Express with 26+ endpoints
 - **Frontend**: ✅ React with state management
 - **Auth**: ✅ JWT with role-based access

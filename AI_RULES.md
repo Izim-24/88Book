@@ -7,7 +7,7 @@
 - **Icons**: Lucide React for a consistent and lightweight icon set.
 - **State Management**: React Context API for global state (Auth, Cart).
 - **Backend**: Node.js with Express.js for the RESTful API.
-- **Database**: PostgreSQL for reliable relational data storage.
+- **Database**: SQL Server for reliable relational data storage.
 - **Authentication**: JWT (JSON Web Tokens) for secure, stateless sessions.
 - **API Client**: Custom fetch wrapper in `src/api/client.js` for consistent error handling.
 

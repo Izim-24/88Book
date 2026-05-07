@@ -5,33 +5,39 @@ const migrate = async () => {
     console.log("Creating user_addresses and wishlists tables...");
 
     await pool.query(`
-      CREATE TABLE IF NOT EXISTS user_addresses (
-        id SERIAL PRIMARY KEY,
-        user_id INT NOT NULL,
-        label VARCHAR(100),
-        name VARCHAR(255) NOT NULL,
-        street TEXT NOT NULL,
-        city VARCHAR(100) NOT NULL,
-        state VARCHAR(100) NOT NULL,
-        zip_code VARCHAR(50) NOT NULL,
-        country VARCHAR(100) NOT NULL,
-        is_default BOOLEAN DEFAULT false,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-      );
+      IF OBJECT_ID('user_addresses', 'U') IS NULL
+      BEGIN
+        CREATE TABLE user_addresses (
+          id INT IDENTITY(1,1) PRIMARY KEY,
+          user_id INT NOT NULL,
+          label NVARCHAR(100),
+          name NVARCHAR(255) NOT NULL,
+          street NVARCHAR(MAX) NOT NULL,
+          city NVARCHAR(100) NOT NULL,
+          state NVARCHAR(100) NOT NULL,
+          zip_code NVARCHAR(50) NOT NULL,
+          country NVARCHAR(100) NOT NULL,
+          is_default BIT DEFAULT 0,
+          created_at DATETIME DEFAULT GETDATE(),
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+      END
     `);
     console.log("✅ Table user_addresses created or already exists.");
 
     await pool.query(`
-      CREATE TABLE IF NOT EXISTS wishlists (
-        id SERIAL PRIMARY KEY,
-        user_id INT NOT NULL,
-        book_id INT NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-        FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE,
-        UNIQUE (user_id, book_id)
-      );
+      IF OBJECT_ID('wishlists', 'U') IS NULL
+      BEGIN
+        CREATE TABLE wishlists (
+          id INT IDENTITY(1,1) PRIMARY KEY,
+          user_id INT NOT NULL,
+          book_id INT NOT NULL,
+          created_at DATETIME DEFAULT GETDATE(),
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+          FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE,
+          UNIQUE (user_id, book_id)
+        );
+      END
     `);
     console.log("✅ Table wishlists created or already exists.");
 

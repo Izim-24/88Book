@@ -5,8 +5,8 @@ Du an website ban sach gom 3 thanh phan chinh: `frontend` (giao dien), `backend`
 ## 1) Tong quan kien truc
 
 - `frontend` (React + Vite) goi REST API toi `backend`.
-- `backend` (Express + PostgreSQL) xu ly xac thuc, phan quyen, gio hang, don hang, quan ly sach.
-- `database` (PostgreSQL) luu users, books, cart, orders va order_items.
+- `backend` (Express + SQL Server) xu ly xac thuc, phan quyen, gio hang, don hang, quan ly sach.
+- `database` (SQL Server) luu users, books, cart, orders va order_items.
 - Xac thuc su dung JWT: token duoc luu o frontend (`localStorage`) va gui qua header `Authorization: Bearer <token>`.
 
 ## 2) Frontend
@@ -63,7 +63,7 @@ File `src/api/client.js` dong vai tro wrapper cho toan bo request:
 ### Cong nghe dang dung
 
 - `Node.js` + `Express`.
-- `pg` ket noi PostgreSQL.
+- `mssql` ket noi SQL Server.
 - `jsonwebtoken` + `bcryptjs` cho auth.
 - `cors`, `dotenv`, `express-validator`.
 
@@ -110,7 +110,7 @@ File `src/api/client.js` dong vai tro wrapper cho toan bo request:
 
 ### He quan tri
 
-- `PostgreSQL`.
+- `SQL Server`.
 
 ### Migration/schema hien tai
 
@@ -187,13 +187,15 @@ node database/migrations/add-rating-column.js
 PORT=5000
 NODE_ENV=development
 DB_HOST=localhost
-DB_PORT=5432
+DB_PORT=1433
 DB_NAME=book_store
-DB_USER=postgres
-DB_PASSWORD=your_password
+DB_USER=sa
+DB_PASSWORD=your_sqlserver_password
 JWT_SECRET=your_secret
 JWT_EXPIRE=7d
 FRONTEND_URL=http://localhost:5174
+DB_ENCRYPT=false
+DB_TRUST_SERVER_CERTIFICATE=true
 ```
 
 ### Frontend (`.env.local`)

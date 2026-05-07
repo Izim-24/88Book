@@ -8,7 +8,7 @@ A professional, production-ready e-commerce platform has been created for you wi
 
 ## 📦 What's Been Built
 
-### 1. **Backend API** (Node.js + Express + PostgreSQL)
+### 1. **Backend API** (Node.js + Express + SQL Server)
 
 #### Core Features Implemented:
 
@@ -23,7 +23,7 @@ A professional, production-ready e-commerce platform has been created for you wi
 
 **Configuration:**
 
-- `backend/config/database.js` - PostgreSQL connection pool
+- `backend/config/database.js` - SQL Server connection pool
 - `backend/.env.example` - Environment template
 
 **Controllers (Business Logic):**
@@ -70,7 +70,7 @@ A professional, production-ready e-commerce platform has been created for you wi
 - `.env.local` - Frontend environment configuration
 - Updated `src/app/App.tsx` - Integrated with API & contexts
 
-### 3. **Database** (PostgreSQL)
+### 3. **Database** (SQL Server)
 
 #### Tables Created:
 
@@ -295,7 +295,7 @@ btl_web/
 - **26+ API Endpoints** - All working and documented
 - **JWT Authentication** - Secure user sessions
 - **Role-Based Access** - Different permissions
-- **PostgreSQL Database** - Normalized & optimized
+- **SQL Server Database** - Normalized & optimized
 - **React Frontend** - Modern UI with state management
 - **Error Handling** - Robust error messages
 - **Docker Support** - Easy deployment

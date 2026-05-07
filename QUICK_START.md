@@ -19,7 +19,7 @@ copy .env.example .env
 
 Edit `.env` file:
 
-- Change `DB_PASSWORD` to your PostgreSQL password
+- Change `DB_PASSWORD` to your SQL Server password
 - Rest can stay as default
 
 **Create database and tables:**
@@ -91,10 +91,8 @@ npm run dev
 ### Database error?
 
 ```bash
-# Make sure PostgreSQL is running
-pg_isready
-
-# Verify credentials in .env match your PostgreSQL setup
+# Make sure SQL Server service is running
+# Verify credentials in .env match your SQL Server setup
 # Then re-run migrations
 npm run migrate
 ```

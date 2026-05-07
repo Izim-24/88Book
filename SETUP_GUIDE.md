@@ -5,7 +5,7 @@
 This is a complete **full-stack e-commerce platform** with:
 
 - **Frontend**: React + TypeScript + Vite (responsive UI)
-- **Backend**: Node.js + Express + PostgreSQL (REST API)
+- **Backend**: Node.js + Express + SQL Server (REST API)
 - **Authentication**: JWT-based auth with role-based access (Buyer/Seller)
 - **Features**: Book browsing, shopping cart, checkout, seller dashboard, order management
 
@@ -28,7 +28,7 @@ btl_web/
 │
 └── backend/                       # Backend (Node.js/Express)
     ├── config/
-    │   └── database.js           # PostgreSQL connection
+    │   └── database.js           # SQL Server connection
     ├── controllers/              # Business logic
     ├── middleware/
     │   └── auth.js              # JWT authentication
@@ -44,28 +44,27 @@ btl_web/
 ## Prerequisites
 
 - **Node.js** v16+ and npm/yarn
-- **PostgreSQL** v12+
+- **SQL Server** 2019+
 - **Git** (optional)
 
-### Install PostgreSQL
+### Install SQL Server
 
 **Windows:**
 
-- Download: https://www.postgresql.org/download/windows/
-- During installation, set password for `postgres` user
+- Install SQL Server + SQL Server Management Studio (SSMS)
+- During installation, set sa/user credentials and enable TCP connection
 - Remember this password - you'll need it for database configuration
 
 **macOS:**
 
 ```bash
-brew install postgresql
-brew services start postgresql
+brew install --cask microsoft-azure-data-studio
 ```
 
 **Linux (Ubuntu):**
 
 ```bash
-sudo apt-get install postgresql postgresql-contrib
+sudo apt-get install mssql-tools18 unixodbc-dev
 ```
 
 ## Backend Setup
@@ -90,26 +89,26 @@ Copy `.env.example` to `.env` and configure:
 cp .env.example .env
 ```
 
-Edit `.env` with your PostgreSQL credentials:
+Edit `.env` with your SQL Server credentials:
 
 ```env
 PORT=5000
 DB_HOST=localhost
-DB_PORT=5432
+DB_PORT=1433
 DB_NAME=book_store
-DB_USER=postgres
-DB_PASSWORD=your_postgres_password
+DB_USER=sa
+DB_PASSWORD=your_sqlserver_password
 JWT_SECRET=your_secret_key_here
 FRONTEND_URL=http://localhost:5174
+DB_ENCRYPT=false
+DB_TRUST_SERVER_CERTIFICATE=true
 ```
 
-### 4. Create PostgreSQL database
+### 4. Create SQL Server database
 
 ```bash
-# Using psql
-createdb book_store
-
-# Or use pgAdmin GUI
+# Using SQL Server Management Studio (SSMS)
+# Create a new database named book_store
 ```
 
 ### 5. Run migrations to create tables
@@ -313,9 +312,9 @@ curl -X POST http://localhost:5000/api/cart \
 
 ## Troubleshooting
 
-### PostgreSQL Connection Error
+### SQL Server Connection Error
 
-- Verify PostgreSQL is running: `pg_isready`
+- Verify SQL Server service is running and port `1433` is open
 - Check credentials in `.env`
 - Ensure database `book_store` exists
 
@@ -333,7 +332,7 @@ curl -X POST http://localhost:5000/api/cart \
 ### Database Tables Not Created
 
 - Run: `npm run migrate` in backend directory
-- Check PostgreSQL is running
+- Check SQL Server is running
 - Verify DB_NAME, DB_USER, DB_PASSWORD in `.env`
 
 ### Blank Homepage/No Books Showing

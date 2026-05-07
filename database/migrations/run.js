@@ -1,83 +1,93 @@
-import pool from "../config/database.js";
+import pool from "../../backend/config/database.js";
 
 const createTables = async () => {
   try {
     console.log("Creating database tables...");
 
-    // Users table
     await pool.query(`
-      CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        email VARCHAR(255) UNIQUE NOT NULL,
-        password VARCHAR(255) NOT NULL,
-        full_name VARCHAR(255) NOT NULL,
-        role VARCHAR(50) DEFAULT 'buyer',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
+      IF OBJECT_ID('users', 'U') IS NULL
+      BEGIN
+        CREATE TABLE users (
+          id INT IDENTITY(1,1) PRIMARY KEY,
+          email NVARCHAR(255) UNIQUE NOT NULL,
+          password NVARCHAR(255) NOT NULL,
+          full_name NVARCHAR(255) NOT NULL,
+          role NVARCHAR(50) DEFAULT 'buyer',
+          created_at DATETIME DEFAULT GETDATE(),
+          updated_at DATETIME DEFAULT GETDATE()
+        );
+      END
     `);
 
-    // Books table
     await pool.query(`
-      CREATE TABLE IF NOT EXISTS books (
-        id SERIAL PRIMARY KEY,
-        title VARCHAR(255) NOT NULL,
-        author VARCHAR(255) NOT NULL,
-        description TEXT,
-        price DECIMAL(10, 2) NOT NULL,
-        category VARCHAR(100),
-        isbn VARCHAR(20),
-        quantity INT DEFAULT 0,
-        image_url VARCHAR(500),
-        seller_id INT NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (seller_id) REFERENCES users(id)
-      );
+      IF OBJECT_ID('books', 'U') IS NULL
+      BEGIN
+        CREATE TABLE books (
+          id INT IDENTITY(1,1) PRIMARY KEY,
+          title NVARCHAR(255) NOT NULL,
+          author NVARCHAR(255) NOT NULL,
+          description NVARCHAR(MAX),
+          price DECIMAL(10, 2) NOT NULL,
+          category NVARCHAR(100),
+          isbn NVARCHAR(20),
+          quantity INT DEFAULT 0,
+          image_url NVARCHAR(500),
+          seller_id INT NOT NULL,
+          created_at DATETIME DEFAULT GETDATE(),
+          updated_at DATETIME DEFAULT GETDATE(),
+          FOREIGN KEY (seller_id) REFERENCES users(id)
+        );
+      END
     `);
 
-    // Cart items table
     await pool.query(`
-      CREATE TABLE IF NOT EXISTS cart_items (
-        id SERIAL PRIMARY KEY,
-        user_id INT NOT NULL,
-        book_id INT NOT NULL,
-        quantity INT NOT NULL DEFAULT 1,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id),
-        FOREIGN KEY (book_id) REFERENCES books(id)
-      );
+      IF OBJECT_ID('cart_items', 'U') IS NULL
+      BEGIN
+        CREATE TABLE cart_items (
+          id INT IDENTITY(1,1) PRIMARY KEY,
+          user_id INT NOT NULL,
+          book_id INT NOT NULL,
+          quantity INT NOT NULL DEFAULT 1,
+          created_at DATETIME DEFAULT GETDATE(),
+          FOREIGN KEY (user_id) REFERENCES users(id),
+          FOREIGN KEY (book_id) REFERENCES books(id)
+        );
+      END
     `);
 
-    // Orders table
     await pool.query(`
-      CREATE TABLE IF NOT EXISTS orders (
-        id SERIAL PRIMARY KEY,
-        user_id INT NOT NULL,
-        total_amount DECIMAL(10, 2) NOT NULL,
-        status VARCHAR(50) DEFAULT 'pending',
-        shipping_address TEXT NOT NULL,
-        payment_method VARCHAR(100),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id)
-      );
+      IF OBJECT_ID('orders', 'U') IS NULL
+      BEGIN
+        CREATE TABLE orders (
+          id INT IDENTITY(1,1) PRIMARY KEY,
+          user_id INT NOT NULL,
+          total_amount DECIMAL(10, 2) NOT NULL,
+          status NVARCHAR(50) DEFAULT 'pending',
+          shipping_address NVARCHAR(MAX) NOT NULL,
+          payment_method NVARCHAR(100),
+          created_at DATETIME DEFAULT GETDATE(),
+          updated_at DATETIME DEFAULT GETDATE(),
+          FOREIGN KEY (user_id) REFERENCES users(id)
+        );
+      END
     `);
 
-    // Order items table
     await pool.query(`
-      CREATE TABLE IF NOT EXISTS order_items (
-        id SERIAL PRIMARY KEY,
-        order_id INT NOT NULL,
-        book_id INT NOT NULL,
-        seller_id INT NOT NULL,
-        quantity INT NOT NULL,
-        price DECIMAL(10, 2) NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (order_id) REFERENCES orders(id),
-        FOREIGN KEY (book_id) REFERENCES books(id),
-        FOREIGN KEY (seller_id) REFERENCES users(id)
-      );
+      IF OBJECT_ID('order_items', 'U') IS NULL
+      BEGIN
+        CREATE TABLE order_items (
+          id INT IDENTITY(1,1) PRIMARY KEY,
+          order_id INT NOT NULL,
+          book_id INT NOT NULL,
+          seller_id INT NOT NULL,
+          quantity INT NOT NULL,
+          price DECIMAL(10, 2) NOT NULL,
+          created_at DATETIME DEFAULT GETDATE(),
+          FOREIGN KEY (order_id) REFERENCES orders(id),
+          FOREIGN KEY (book_id) REFERENCES books(id),
+          FOREIGN KEY (seller_id) REFERENCES users(id)
+        );
+      END
     `);
 
     console.log("✅ All tables created successfully!");

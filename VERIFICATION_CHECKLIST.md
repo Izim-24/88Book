@@ -5,7 +5,7 @@ Use this checklist to verify everything is set up correctly.
 ## Prerequisites
 
 - [ ] Node.js v16+ installed (`node --version`)
-- [ ] PostgreSQL installed OR Docker installed
+- [ ] SQL Server + SSMS installed OR Docker installed
 - [ ] npm/yarn installed (`npm --version`)
 - [ ] Code editor (VS Code recommended)
 - [ ] Terminal/Command Prompt ready
@@ -14,16 +14,16 @@ Use this checklist to verify everything is set up correctly.
 
 ### Database Configuration
 
-- [ ] PostgreSQL service is running
-- [ ] psql access works: `psql -U postgres`
-- [ ] Database created: `createdb book_store`
+- [ ] SQL Server service is running
+- [ ] SSMS can connect to your SQL Server instance
+- [ ] Database created: `book_store`
 
 ### Backend Installation
 
 - [ ] Navigate to backend: `cd backend`
 - [ ] Install dependencies: `npm install` (no errors)
 - [ ] Copy env file: `cp .env.example .env`
-- [ ] Edit `.env` with your PostgreSQL password
+- [ ] Edit `.env` with your SQL Server password
 - [ ] Run migrations: `npm run migrate` ✅ (should show success message)
 
 ### Backend Running
@@ -187,7 +187,7 @@ curl -H "Authorization: Bearer <YOUR_TOKEN>" \
 ## Backup & Security
 
 - [ ] `.env` file is in `.gitignore` (don't commit passwords)
-- [ ] Database backups can be created: `pg_dump book_store > backup.sql`
+- [ ] Database backups can be created from SSMS backup task
 - [ ] JWT secret is randomized and strong
 - [ ] Passwords are hashed (can verify in DB)
 
@@ -202,7 +202,7 @@ If you encounter issues, document them here:
 
 ### Issue: Database connection failed
 
-- Solution: Check PostgreSQL is running, verify credentials
+- Solution: Check SQL Server is running, verify credentials
 - Resolved: [ ]
 
 ### Issue: Books not loading

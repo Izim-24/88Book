@@ -107,7 +107,7 @@ export const updateCartItem = async (req, res) => {
     }
 
     const result = await pool.query(
-      "UPDATE cart_items SET quantity = $1 WHERE id = $2 AND user_id = $3 RETURNING *",
+      "UPDATE cart_items SET quantity = $1 OUTPUT INSERTED.* WHERE id = $2 AND user_id = $3",
       [quantity, cartItemId, userId],
     );
 
@@ -138,7 +138,7 @@ export const removeFromCart = async (req, res) => {
     const { cartItemId } = req.params;
 
     const result = await pool.query(
-      "DELETE FROM cart_items WHERE id = $1 AND user_id = $2 RETURNING id",
+      "DELETE FROM cart_items OUTPUT DELETED.id WHERE id = $1 AND user_id = $2",
       [cartItemId, userId],
     );
 

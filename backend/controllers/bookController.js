@@ -11,14 +11,16 @@ export const getAllBooks = async (req, res) => {
       maxPrice,
       sortBy = "created_at",
     } = req.query;
-    const offset = (page - 1) * limit;
+    const pageNumber = Number(page);
+    const pageSize = Number(limit);
+    const offset = (pageNumber - 1) * pageSize;
 
     let query = "SELECT * FROM books WHERE 1=1";
     const params = [];
     let paramIndex = 1;
 
     if (search) {
-      query += ` AND (title ILIKE $${paramIndex} OR author ILIKE $${paramIndex})`;
+      query += ` AND (title LIKE $${paramIndex} OR author LIKE $${paramIndex})`;
       params.push(`%${search}%`);
       paramIndex++;
     }
@@ -41,18 +43,36 @@ export const getAllBooks = async (req, res) => {
       paramIndex++;
     }
 
-    query += ` ORDER BY ${sortBy} DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
-    params.push(limit, offset);
+    const allowedSortFields = ["created_at", "price", "title", "author", "rating"];
+    const safeSortBy = allowedSortFields.includes(sortBy) ? sortBy : "created_at";
+    query += ` ORDER BY ${safeSortBy} DESC OFFSET $${paramIndex} ROWS FETCH NEXT $${paramIndex + 1} ROWS ONLY`;
+    params.push(offset, pageSize);
 
     const result = await pool.query(query, params);
 
     // Get total count
-    let countQuery = "SELECT COUNT(*) FROM books WHERE 1=1";
-    let countParams = [];
-    if (search) countParams.push(`%${search}%`);
-    if (category) countParams.push(category);
-    if (minPrice) countParams.push(minPrice);
-    if (maxPrice) countParams.push(maxPrice);
+    let countQuery = "SELECT COUNT(*) AS count FROM books WHERE 1=1";
+    const countParams = [];
+    let countParamIndex = 1;
+    if (search) {
+      countQuery += ` AND (title LIKE $${countParamIndex} OR author LIKE $${countParamIndex})`;
+      countParams.push(`%${search}%`);
+      countParamIndex++;
+    }
+    if (category) {
+      countQuery += ` AND category = $${countParamIndex}`;
+      countParams.push(category);
+      countParamIndex++;
+    }
+    if (minPrice) {
+      countQuery += ` AND price >= $${countParamIndex}`;
+      countParams.push(minPrice);
+      countParamIndex++;
+    }
+    if (maxPrice) {
+      countQuery += ` AND price <= $${countParamIndex}`;
+      countParams.push(maxPrice);
+    }
 
     const countResult = await pool.query(countQuery, countParams);
     const total = parseInt(countResult.rows[0].count);
@@ -61,10 +81,10 @@ export const getAllBooks = async (req, res) => {
       success: true,
       books: result.rows,
       pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
+        page: pageNumber,
+        limit: pageSize,
         total,
-        pages: Math.ceil(total / limit),
+        pages: Math.ceil(total / pageSize),
       },
     });
   } catch (error) {
@@ -123,7 +143,7 @@ export const createBook = async (req, res) => {
     }
 
     const result = await pool.query(
-      "INSERT INTO books (title, author, description, price, category, isbn, quantity, image_url, seller_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *",
+      "INSERT INTO books (title, author, description, price, category, isbn, quantity, image_url, seller_id) OUTPUT INSERTED.* VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
       [
         title,
         author,
@@ -166,7 +186,7 @@ export const updateBook = async (req, res) => {
     } = req.body;
 
     const result = await pool.query(
-      "UPDATE books SET title = $1, author = $2, description = $3, price = $4, category = $5, isbn = $6, quantity = $7, image_url = $8, updated_at = NOW() WHERE id = $9 AND seller_id = $10 RETURNING *",
+      "UPDATE books SET title = $1, author = $2, description = $3, price = $4, category = $5, isbn = $6, quantity = $7, image_url = $8, updated_at = GETDATE() OUTPUT INSERTED.* WHERE id = $9 AND seller_id = $10",
       [
         title,
         author,
@@ -207,7 +227,7 @@ export const deleteBook = async (req, res) => {
     const { id } = req.params;
 
     const result = await pool.query(
-      "DELETE FROM books WHERE id = $1 AND seller_id = $2 RETURNING id",
+      "DELETE FROM books OUTPUT DELETED.id WHERE id = $1 AND seller_id = $2",
       [id, req.user.userId],
     );
 

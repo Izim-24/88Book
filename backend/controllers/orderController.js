@@ -1,5 +1,22 @@
 import pool from "../config/database.js";
 
+const getOrderItems = async (orderId) => {
+  const itemsResult = await pool.query(
+    `SELECT oi.book_id, oi.quantity, oi.price, b.title
+     FROM order_items oi
+     LEFT JOIN books b ON oi.book_id = b.id
+     WHERE oi.order_id = $1`,
+    [orderId],
+  );
+
+  return itemsResult.rows.map((item) => ({
+    bookId: item.book_id,
+    bookTitle: item.title,
+    quantity: item.quantity,
+    price: item.price,
+  }));
+};
+
 export const createOrder = async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -37,8 +54,8 @@ export const createOrder = async (req, res) => {
     // Create order
     const orderResult = await pool.query(
       `INSERT INTO orders (user_id, total_amount, status, shipping_address, payment_method)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING *`,
+       OUTPUT INSERTED.*
+       VALUES ($1, $2, $3, $4, $5)`,
       [userId, totalAmount, "pending", shippingAddress, paymentMethod],
     );
 
@@ -86,20 +103,23 @@ export const getUserOrders = async (req, res) => {
     const userId = req.user.userId;
 
     const result = await pool.query(
-      `SELECT o.*, 
-        json_agg(json_build_object('bookId', oi.book_id, 'bookTitle', b.title, 'quantity', oi.quantity, 'price', oi.price)) as items
+      `SELECT o.*
        FROM orders o
-       LEFT JOIN order_items oi ON o.id = oi.order_id
-       LEFT JOIN books b ON oi.book_id = b.id
        WHERE o.user_id = $1
-       GROUP BY o.id
        ORDER BY o.created_at DESC`,
       [userId],
     );
 
+    const orders = await Promise.all(
+      result.rows.map(async (order) => ({
+        ...order,
+        items: await getOrderItems(order.id),
+      })),
+    );
+
     res.json({
       success: true,
-      orders: result.rows,
+      orders,
     });
   } catch (error) {
     console.error(error);
@@ -204,19 +224,24 @@ export const cancelOrder = async (req, res) => {
 export const getAdminPendingOrders = async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT o.*, u.fullName, u.email,
-        json_agg(json_build_object('bookId', oi.book_id, 'quantity', oi.quantity, 'price', oi.price)) as items
+      `SELECT o.*, u.full_name, u.email
        FROM orders o
        JOIN users u ON o.user_id = u.id
-       LEFT JOIN order_items oi ON o.id = oi.order_id
        WHERE o.status = 'pending'
-       GROUP BY o.id, u.id
        ORDER BY o.created_at ASC`,
+    );
+
+    const orders = await Promise.all(
+      result.rows.map(async (order) => ({
+        ...order,
+        fullName: order.full_name,
+        items: await getOrderItems(order.id),
+      })),
     );
 
     res.json({
       success: true,
-      orders: result.rows,
+      orders,
     });
   } catch (error) {
     console.error(error);
@@ -246,7 +271,7 @@ export const approveOrder = async (req, res) => {
 
     // Update order status to approved
     await pool.query(
-      "UPDATE orders SET status = $1, updated_at = NOW() WHERE id = $2",
+      "UPDATE orders SET status = $1, updated_at = GETDATE() WHERE id = $2",
       ["approved", orderId],
     );
 
@@ -290,7 +315,7 @@ export const updateOrderStatus = async (req, res) => {
 
     // Update order status
     await pool.query(
-      "UPDATE orders SET status = $1, updated_at = NOW() WHERE id = $2",
+      "UPDATE orders SET status = $1, updated_at = GETDATE() WHERE id = $2",
       [status, orderId],
     );
 

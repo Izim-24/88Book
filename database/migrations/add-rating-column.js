@@ -1,4 +1,4 @@
-import pool from "../config/database.js";
+import pool from "../../backend/config/database.js";
 
 const addRatingColumn = async () => {
   try {
@@ -6,16 +6,13 @@ const addRatingColumn = async () => {
 
     // Check if column already exists
     const checkColumn = await pool.query(
-      `SELECT column_name FROM information_schema.columns 
-       WHERE table_name = 'books' AND column_name = 'rating'`,
+      `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+       WHERE TABLE_NAME = 'books' AND COLUMN_NAME = 'rating'`,
     );
 
     if (checkColumn.rows.length === 0) {
       // Add rating column if it doesn't exist
-      await pool.query(`
-        ALTER TABLE books
-        ADD COLUMN rating DECIMAL(3, 1) DEFAULT 4.5;
-      `);
+      await pool.query("ALTER TABLE books ADD rating DECIMAL(3, 1) DEFAULT 4.5");
       console.log("✅ Rating column added successfully!");
     } else {
       console.log("ℹ️ Rating column already exists!");
