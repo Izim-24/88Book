@@ -2,7 +2,18 @@ import pool from "../config/database.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
-const verifyPassword = async (rawPassword, storedPassword) => {
+const validateEmail = (email) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
+const validatePassword = (password) => {
+  // Password must be at least 8 characters
+  if (password.length < 8) {
+    return { valid: false, message: "Password must be at least 8 characters" };
+  }
+  return { valid: true };
+};
   // Backward compatibility for seeded/dev accounts with plain-text password.
   if (storedPassword?.startsWith?.("$2")) {
     return bcrypt.compare(rawPassword, storedPassword);
@@ -46,6 +57,23 @@ export const registerUser = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "Email, password, and full name are required",
+      });
+    }
+
+    // Validate email format
+    if (!validateEmail(email)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid email format",
+      });
+    }
+
+    // Validate password strength
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.valid) {
+      return res.status(400).json({
+        success: false,
+        message: passwordValidation.message,
       });
     }
 

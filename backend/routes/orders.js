@@ -13,19 +13,19 @@ import {
 
 const router = express.Router();
 
-// User routes
-router.post("/", authenticateToken, createOrder);
-router.get("/", authenticateToken, getUserOrders);
-router.get("/:orderId", authenticateToken, getOrderDetails);
-router.put("/:orderId/cancel", authenticateToken, cancelOrder);
-
-// Admin routes
+// Admin routes - MUST be before :orderId parameterized routes
 router.get(
   "/admin/pending",
   authenticateToken,
   authorizeRole("admin"),
   getAdminPendingOrders,
 );
+
+// User routes
+router.post("/", authenticateToken, createOrder);
+router.get("/", authenticateToken, getUserOrders);
+router.get("/:orderId", authenticateToken, getOrderDetails);
+router.put("/:orderId/cancel", authenticateToken, cancelOrder);
 router.put(
   "/:orderId/approve",
   authenticateToken,

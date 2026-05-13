@@ -1,5 +1,14 @@
 # Book Store API - Setup Guide
 
+## 🆕 Recent Updates
+
+**✅ Version 1.1.0 - Major Fixes Released**
+
+- Fixed 24 bugs including critical route ordering and SQL syntax issues
+- Added comprehensive input validation (email, password, prices, quantities)
+- Improved error handling and JWT authentication
+- See [CHANGELOG.md](../CHANGELOG.md) for full details
+
 ## Prerequisites
 
 - Node.js (v16+)

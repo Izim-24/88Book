@@ -5,17 +5,27 @@ export const addToCart = async (req, res) => {
     const userId = req.user.userId;
     const { bookId, quantity } = req.body;
 
-    if (!bookId || !quantity || quantity < 1) {
+    // Validate inputs
+    if (!bookId || !quantity) {
       return res.status(400).json({
         success: false,
-        message: "Book ID and valid quantity are required",
+        message: "Book ID and quantity are required",
       });
     }
 
-    // Check if book exists and has quantity
-    const bookResult = await pool.query("SELECT * FROM books WHERE id = $1", [
-      bookId,
-    ]);
+    // Validate quantity is a positive integer
+    if (!Number.isInteger(quantity) || quantity < 1) {
+      return res.status(400).json({
+        success: false,
+        message: "Quantity must be a positive integer",
+      });
+    }
+
+    // Check if book exists and has sufficient quantity
+    const bookResult = await pool.query(
+      "SELECT id, quantity FROM books WHERE id = $1",
+      [bookId],
+    );
     if (bookResult.rows.length === 0) {
       return res.status(404).json({
         success: false,
@@ -23,15 +33,29 @@ export const addToCart = async (req, res) => {
       });
     }
 
+    const book = bookResult.rows[0];
+    if (book.quantity < quantity) {
+      return res.status(400).json({
+        success: false,
+        message: `Only ${book.quantity} copies available in stock`,
+      });
+    }
+
     // Check if item already in cart
     const existingResult = await pool.query(
-      "SELECT * FROM cart_items WHERE user_id = $1 AND book_id = $2",
+      "SELECT quantity FROM cart_items WHERE user_id = $1 AND book_id = $2",
       [userId, bookId],
     );
 
     if (existingResult.rows.length > 0) {
-      // Update quantity
+      // Update quantity with validation
       const updatedQty = existingResult.rows[0].quantity + quantity;
+      if (updatedQty > book.quantity) {
+        return res.status(400).json({
+          success: false,
+          message: `Only ${book.quantity} copies available in stock`,
+        });
+      }
       await pool.query(
         "UPDATE cart_items SET quantity = $1 WHERE user_id = $2 AND book_id = $3",
         [updatedQty, userId, bookId],
@@ -99,10 +123,49 @@ export const updateCartItem = async (req, res) => {
     const { cartItemId } = req.params;
     const { quantity } = req.body;
 
-    if (!quantity || quantity < 1) {
+    if (!quantity) {
       return res.status(400).json({
         success: false,
-        message: "Valid quantity is required",
+        message: "Quantity is required",
+      });
+    }
+
+    // Validate quantity is a positive integer
+    if (!Number.isInteger(quantity) || quantity < 1) {
+      return res.status(400).json({
+        success: false,
+        message: "Quantity must be a positive integer",
+      });
+    }
+
+    // Get cart item to find book_id
+    const cartItemResult = await pool.query(
+      "SELECT book_id FROM cart_items WHERE id = $1 AND user_id = $2",
+      [cartItemId, userId],
+    );
+
+    if (cartItemResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Cart item not found",
+      });
+    }
+
+    const bookId = cartItemResult.rows[0].book_id;
+
+    // Check book availability
+    const bookResult = await pool.query(
+      "SELECT quantity FROM books WHERE id = $1",
+      [bookId],
+    );
+
+    if (
+      bookResult.rows.length === 0 ||
+      bookResult.rows[0].quantity < quantity
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: `Only ${bookResult.rows[0]?.quantity || 0} copies available in stock`,
       });
     }
 
@@ -110,13 +173,6 @@ export const updateCartItem = async (req, res) => {
       "UPDATE cart_items SET quantity = $1 OUTPUT INSERTED.* WHERE id = $2 AND user_id = $3",
       [quantity, cartItemId, userId],
     );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "Cart item not found",
-      });
-    }
 
     res.json({
       success: true,

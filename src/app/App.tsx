@@ -33,7 +33,13 @@ import {
 } from "lucide-react";
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
 import { CartProvider, useCart } from "../contexts/CartContext";
-import { booksAPI, ordersAPI, addressesAPI, wishlistAPI, usersAPI } from "../api/client";
+import {
+  booksAPI,
+  ordersAPI,
+  addressesAPI,
+  wishlistAPI,
+  usersAPI,
+} from "../api/client";
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState("home");
@@ -66,12 +72,17 @@ function AppContent() {
     name: user?.fullName || "Guest",
     email: user?.email || "",
     phone: "",
-    joinedDate: user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : ""
+    joinedDate: user?.createdAt
+      ? new Date(user.createdAt).toLocaleDateString()
+      : "",
   };
 
   const handleUpdateProfile = async (profile: UserProfile) => {
     if (!user?.id) return;
-    const res = await usersAPI.updateProfile(user.id, { fullName: profile.name, email: profile.email });
+    const res = await usersAPI.updateProfile({
+      fullName: profile.name,
+      email: profile.email,
+    });
     if (res.success) {
       alert("Profile updated successfully!");
     } else {
@@ -148,39 +159,47 @@ function AppContent() {
   useEffect(() => {
     if (isAuthenticated) {
       fetchCart();
-      
-      ordersAPI.getAll().then(res => {
+
+      ordersAPI.getAll().then((res) => {
         if (res.success) {
-          setOrders(res.orders.map((o: any) => ({
-            id: `ORD-${o.id}`,
-            date: new Date(o.created_at).toLocaleDateString(),
-            total: Number(o.total_amount),
-            status: o.status,
-            items: o.items ? o.items.map((i: any) => ({
-              bookTitle: i.bookTitle || `Book #${i.bookId}`,
-              quantity: i.quantity,
-              price: Number(i.price)
-            })) : []
-          })));
+          setOrders(
+            res.orders.map((o: any) => ({
+              id: `ORD-${o.id}`,
+              date: new Date(o.created_at).toLocaleDateString(),
+              total: Number(o.total_amount),
+              status: o.status,
+              items: o.items
+                ? o.items.map((i: any) => ({
+                    bookTitle: i.bookTitle || `Book #${i.bookId}`,
+                    quantity: i.quantity,
+                    price: Number(i.price),
+                  }))
+                : [],
+            })),
+          );
         }
       });
-      
-      addressesAPI.getAll().then(res => {
+
+      addressesAPI.getAll().then((res) => {
         if (res.success) setAddresses(res.addresses);
       });
-      
-      wishlistAPI.getAll().then(res => {
+
+      wishlistAPI.getAll().then((res) => {
         if (res.success) {
-          setWishlist(res.wishlist.map((b: any) => ({
-             id: b.id.toString(),
-             title: b.title,
-             author: b.author,
-             price: Number(b.price),
-             coverImage: b.coverImage || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=400",
-             category: b.category || "General",
-             rating: Number(b.rating) || 4.5,
-             description: b.description || "No description available"
-          })));
+          setWishlist(
+            res.wishlist.map((b: any) => ({
+              id: b.id.toString(),
+              title: b.title,
+              author: b.author,
+              price: Number(b.price),
+              coverImage:
+                b.coverImage ||
+                "https://images.unsplash.com/photo-1544947950-fa07a98d237f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=400",
+              category: b.category || "General",
+              rating: Number(b.rating) || 4.5,
+              description: b.description || "No description available",
+            })),
+          );
         }
       });
     } else {
@@ -244,7 +263,7 @@ function AppContent() {
   const handleAddAddress = async (newAddress: Omit<Address, "id">) => {
     const res = await addressesAPI.add(newAddress);
     if (res.success) {
-      setAddresses(prev => [res.address, ...prev]);
+      setAddresses((prev) => [res.address, ...prev]);
     } else {
       alert("Failed to add address");
     }
@@ -253,7 +272,9 @@ function AppContent() {
   const handleUpdateAddress = async (updatedAddress: Address) => {
     const res = await addressesAPI.update(updatedAddress.id, updatedAddress);
     if (res.success) {
-      setAddresses(prev => prev.map(a => a.id === updatedAddress.id ? res.address : a));
+      setAddresses((prev) =>
+        prev.map((a) => (a.id === updatedAddress.id ? res.address : a)),
+      );
     } else {
       alert("Failed to update address");
     }
@@ -262,7 +283,7 @@ function AppContent() {
   const handleDeleteAddress = async (id: string) => {
     const res = await addressesAPI.delete(id);
     if (res.success) {
-      setAddresses(prev => prev.filter(a => a.id !== id));
+      setAddresses((prev) => prev.filter((a) => a.id !== id));
     } else {
       alert("Failed to delete address");
     }
@@ -274,13 +295,18 @@ function AppContent() {
       handleNavigate("account");
       return;
     }
-    const isWishlisted = wishlist.some(b => b.id.toString() === book.id.toString());
+    const isWishlisted = wishlist.some(
+      (b) => b.id.toString() === book.id.toString(),
+    );
     if (isWishlisted) {
       const res = await wishlistAPI.remove(book.id);
-      if (res.success) setWishlist(prev => prev.filter(b => b.id.toString() !== book.id.toString()));
+      if (res.success)
+        setWishlist((prev) =>
+          prev.filter((b) => b.id.toString() !== book.id.toString()),
+        );
     } else {
       const res = await wishlistAPI.add(book.id);
-      if (res.success) setWishlist(prev => [book, ...prev]);
+      if (res.success) setWishlist((prev) => [book, ...prev]);
     }
   };
 
@@ -332,7 +358,9 @@ function AppContent() {
 
   // Filtered books for special pages
   const newArrivals = [...books].sort((a, b) => b.id - a.id).slice(0, 12);
-  const topRated = [...books].sort((a, b) => (Number(b.rating) || 0) - (Number(a.rating) || 0)).slice(0, 12);
+  const topRated = [...books]
+    .sort((a, b) => (Number(b.rating) || 0) - (Number(a.rating) || 0))
+    .slice(0, 12);
   const displayedRecommendations = recommendations.map((book: any) => ({
     ...book,
     id: book.id.toString(),
@@ -474,7 +502,9 @@ function AppContent() {
                         setIsModalOpen(true);
                       }}
                       onToggleWishlist={handleToggleWishlist}
-                      isWishlisted={wishlist.some((w) => w.id.toString() === book.id.toString())}
+                      isWishlisted={wishlist.some(
+                        (w) => w.id.toString() === book.id.toString(),
+                      )}
                     />
                   ))}
                 </div>
@@ -485,7 +515,9 @@ function AppContent() {
           {/* Recommendations */}
           <section className="section-block section-soft px-4 sm:px-6 lg:px-8">
             <div className="max-w-7xl mx-auto">
-              <h2 className="text-3xl sm:text-4xl font-bold mb-2">Recommendations</h2>
+              <h2 className="text-3xl sm:text-4xl font-bold mb-2">
+                Recommendations
+              </h2>
               <p className="text-muted-foreground mb-8">
                 Handpicked titles from BookHaven's favorite reads.
               </p>
@@ -496,29 +528,31 @@ function AppContent() {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                   {displayedRecommendations.map((book) => (
-                  <button
-                    key={`recommendation-${book.id}`}
-                    type="button"
-                    onClick={() => {
-                      setSelectedBook(book);
-                      setIsModalOpen(true);
-                    }}
-                    className="reveal-on-scroll bg-card border border-border rounded-2xl p-5 text-left hover:border-primary hover:shadow-md transition-all"
-                  >
-                    <p className="text-xs uppercase tracking-wide text-primary mb-2">
-                      Recommended
-                    </p>
-                    <h3 className="text-xl font-semibold mb-1">{book.title}</h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      by {book.author}
-                    </p>
-                    <p className="text-sm text-muted-foreground line-clamp-3">
-                      {book.description}
-                    </p>
-                    <span className="inline-block mt-4 text-accent font-semibold">
-                      View details
-                    </span>
-                  </button>
+                    <button
+                      key={`recommendation-${book.id}`}
+                      type="button"
+                      onClick={() => {
+                        setSelectedBook(book);
+                        setIsModalOpen(true);
+                      }}
+                      className="reveal-on-scroll bg-card border border-border rounded-2xl p-5 text-left hover:border-primary hover:shadow-md transition-all"
+                    >
+                      <p className="text-xs uppercase tracking-wide text-primary mb-2">
+                        Recommended
+                      </p>
+                      <h3 className="text-xl font-semibold mb-1">
+                        {book.title}
+                      </h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        by {book.author}
+                      </p>
+                      <p className="text-sm text-muted-foreground line-clamp-3">
+                        {book.description}
+                      </p>
+                      <span className="inline-block mt-4 text-accent font-semibold">
+                        View details
+                      </span>
+                    </button>
                   ))}
                 </div>
               )}
@@ -603,9 +637,10 @@ function AppContent() {
                   book={{
                     ...book,
                     id: book.id.toString(),
-                    coverImage: book.image_url || "https://via.placeholder.com/400",
+                    coverImage:
+                      book.image_url || "https://via.placeholder.com/400",
                     rating: Number(book.rating) || 4.5,
-                    description: book.description || "No description available"
+                    description: book.description || "No description available",
                   }}
                   badge="New"
                   onAddToCart={handleAddToCart}
@@ -614,7 +649,9 @@ function AppContent() {
                     setIsModalOpen(true);
                   }}
                   onToggleWishlist={handleToggleWishlist}
-                  isWishlisted={wishlist.some((w) => w.id.toString() === book.id.toString())}
+                  isWishlisted={wishlist.some(
+                    (w) => w.id.toString() === book.id.toString(),
+                  )}
                 />
               ))}
             </div>
@@ -633,9 +670,10 @@ function AppContent() {
                   book={{
                     ...book,
                     id: book.id.toString(),
-                    coverImage: book.image_url || "https://via.placeholder.com/400",
+                    coverImage:
+                      book.image_url || "https://via.placeholder.com/400",
                     rating: Number(book.rating) || 4.5,
-                    description: book.description || "No description available"
+                    description: book.description || "No description available",
                   }}
                   badge="Top Rated"
                   onAddToCart={handleAddToCart}
@@ -644,7 +682,9 @@ function AppContent() {
                     setIsModalOpen(true);
                   }}
                   onToggleWishlist={handleToggleWishlist}
-                  isWishlisted={wishlist.some((w) => w.id.toString() === book.id.toString())}
+                  isWishlisted={wishlist.some(
+                    (w) => w.id.toString() === book.id.toString(),
+                  )}
                 />
               ))}
             </div>
@@ -697,7 +737,9 @@ function AppContent() {
           onAddAddress={handleAddAddress}
           onUpdateAddress={handleUpdateAddress}
           onDeleteAddress={handleDeleteAddress}
-          onRemoveFromWishlist={(bookId) => handleToggleWishlist({ id: bookId } as any)}
+          onRemoveFromWishlist={(bookId) =>
+            handleToggleWishlist({ id: bookId } as any)
+          }
           onLogout={handleLogout}
           onLogin={login}
           onRegister={register}

@@ -156,9 +156,10 @@ export const adminAPI = {
 
 // Users API
 export const usersAPI = {
-  getProfile: (userId) => apiClient.get(`/users/${userId}`),
-  updateProfile: (userId, profile) =>
-    apiClient.put(`/users/${userId}`, profile),
+  getProfile: () => apiClient.get("/users/profile"),
+  updateProfile: (userId, profile) => apiClient.put("/users/profile", profile),
+  changePassword: (currentPassword, newPassword) =>
+    apiClient.put("/users/password", { currentPassword, newPassword }),
 };
 
 // Addresses API

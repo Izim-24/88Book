@@ -1,8 +1,14 @@
-# Book Selling Website - Fullstack
+# 📚 Book Selling Website - Fullstack Application
 
-Du an website ban sach gom 3 thanh phan chinh: `frontend` (giao dien), `backend` (API + business logic), va `database` (luu tru du lieu).
+Dự án website bán sách gồm 3 thành phần chính: `frontend` (giao diện), `backend` (API + business logic), và `database` (lưu trữ dữ liệu).
 
-## 1) Tong quan kien truc
+## 🔗 Quick Links
+
+- 🚀 **[Troubleshooting & Setup Guide](./TROUBLESHOOTING.md)** - Common issues & solutions
+- 📋 **[API Documentation](./backend/README.md)** - Backend endpoints
+- ⚙️ **[Setup Guide](./SETUP_GUIDE.md)** - Detailed setup instructions
+
+## 📊 Tổng quan kiến trúc
 
 - `frontend` (React + Vite) goi REST API toi `backend`.
 - `backend` (Express + SQL Server) xu ly xac thuc, phan quyen, gio hang, don hang, quan ly sach.

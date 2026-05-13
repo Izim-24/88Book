@@ -17,7 +17,7 @@ const ensureRecommendationsTable = async () => {
 
 export const getAllBooks = async (req, res) => {
   try {
-    const {
+    let {
       page = 1,
       limit = 20,
       search,
@@ -26,8 +26,16 @@ export const getAllBooks = async (req, res) => {
       maxPrice,
       sortBy = "created_at",
     } = req.query;
-    const pageNumber = Number(page);
-    const pageSize = Number(limit);
+
+    // Validate pagination parameters
+    page = Number(page);
+    limit = Number(limit);
+    if (!Number.isInteger(page) || page < 1) page = 1;
+    if (!Number.isInteger(limit) || limit < 1) limit = 20;
+    if (limit > 100) limit = 100; // Max limit to prevent abuse
+
+    const pageNumber = page;
+    const pageSize = limit;
     const offset = (pageNumber - 1) * pageSize;
 
     let query = "SELECT * FROM books WHERE 1=1";
@@ -58,8 +66,16 @@ export const getAllBooks = async (req, res) => {
       paramIndex++;
     }
 
-    const allowedSortFields = ["created_at", "price", "title", "author", "rating"];
-    const safeSortBy = allowedSortFields.includes(sortBy) ? sortBy : "created_at";
+    const allowedSortFields = [
+      "created_at",
+      "price",
+      "title",
+      "author",
+      "rating",
+    ];
+    const safeSortBy = allowedSortFields.includes(sortBy)
+      ? sortBy
+      : "created_at";
     query += ` ORDER BY ${safeSortBy} DESC OFFSET $${paramIndex} ROWS FETCH NEXT $${paramIndex + 1} ROWS ONLY`;
     params.push(offset, pageSize);
 
@@ -181,16 +197,34 @@ export const createBook = async (req, res) => {
       });
     }
 
+    // Validate price
+    const numPrice = Number(price);
+    if (isNaN(numPrice) || numPrice <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Price must be a positive number",
+      });
+    }
+
+    // Validate quantity
+    const numQuantity = Number(quantity) || 0;
+    if (numQuantity < 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Quantity cannot be negative",
+      });
+    }
+
     const result = await pool.query(
       "INSERT INTO books (title, author, description, price, category, isbn, quantity, image_url, admin_id) OUTPUT INSERTED.* VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
       [
         title,
         author,
         description,
-        price,
+        numPrice,
         category,
         isbn,
-        quantity || 0,
+        numQuantity,
         imageUrl || image_url,
         adminId,
       ],
