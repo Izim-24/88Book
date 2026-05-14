@@ -1,4 +1,4 @@
-import { X, ShoppingCart, Star } from "lucide-react";
+import { X, ShoppingCart } from "lucide-react";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { Book } from "./BookCard";
 
@@ -15,15 +15,7 @@ export function BookDetailsModal({
   onClose,
   onAddToCart,
 }: BookDetailsModalProps) {
-  console.log(
-    "BookDetailsModal render - isOpen:",
-    isOpen,
-    "book:",
-    book?.title,
-  );
-
   if (!isOpen || !book) {
-    console.log("Modal not rendering - isOpen:", isOpen, "hasBook:", !!book);
     return null;
   }
 

@@ -200,7 +200,7 @@ PUT    /api/orders/:id/status   - Update status (admin only)
 ```
 GET    /api/users/profile       - Get user profile (protected)
 PUT    /api/users/profile       - Update profile (protected)
-PUT    /api/users/password      - Change password (protected)
+PUT    /api/users/change-password      - Change password (protected)
 GET    /api/users/addresses     - Get addresses (protected)
 POST   /api/users/addresses     - Add address (protected)
 PUT    /api/users/addresses/:id - Update address (protected)

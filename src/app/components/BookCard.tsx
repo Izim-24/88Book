@@ -22,15 +22,20 @@ interface BookCardProps {
   badge?: string;
 }
 
-export function BookCard({ book, onAddToCart, onViewDetails, onToggleWishlist, isWishlisted, badge }: BookCardProps) {
+export function BookCard({
+  book,
+  onAddToCart,
+  onViewDetails,
+  onToggleWishlist,
+  isWishlisted,
+  badge,
+}: BookCardProps) {
   const handleCardClick = () => {
-    console.log("Card clicked, book:", book);
     onViewDetails?.(book);
   };
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
-    console.log("Add to cart clicked");
     onAddToCart(book);
   };
 
@@ -54,7 +59,11 @@ export function BookCard({ book, onAddToCart, onViewDetails, onToggleWishlist, i
         className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-background/90 border border-border flex items-center justify-center hover:bg-background transition-colors"
         aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
       >
-        <Heart className={`w-4 h-4 ${isWishlisted ? "fill-accent text-accent" : "text-accent"}`} />
+        <Heart
+          className={`w-4 h-4 ${
+            isWishlisted ? "fill-accent text-accent" : "text-accent"
+          }`}
+        />
       </button>
       <div className="book-cover aspect-[3/4] overflow-hidden p-2">
         <ImageWithFallback

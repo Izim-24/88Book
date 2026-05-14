@@ -100,10 +100,20 @@ export const booksAPI = {
     minPrice,
     maxPrice,
     sortBy,
-  ) =>
-    apiClient.get(
-      `/books?page=${page}&limit=${limit}${search ? `&search=${search}` : ""}${category ? `&category=${category}` : ""}${minPrice ? `&minPrice=${minPrice}` : ""}${maxPrice ? `&maxPrice=${maxPrice}` : ""}${sortBy ? `&sortBy=${sortBy}` : ""}`,
-    ),
+  ) => {
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+    });
+
+    if (search) params.set("search", search);
+    if (category) params.set("category", category);
+    if (minPrice) params.set("minPrice", String(minPrice));
+    if (maxPrice) params.set("maxPrice", String(maxPrice));
+    if (sortBy) params.set("sortBy", sortBy);
+
+    return apiClient.get(`/books?${params.toString()}`);
+  },
   getById: (id) => apiClient.get(`/books/${id}`),
   getRecommendations: () => apiClient.get("/books/recommendations"),
   create: (book) => apiClient.post("/books", book),
@@ -157,9 +167,9 @@ export const adminAPI = {
 // Users API
 export const usersAPI = {
   getProfile: () => apiClient.get("/users/profile"),
-  updateProfile: (userId, profile) => apiClient.put("/users/profile", profile),
+  updateProfile: (profile) => apiClient.put("/users/profile", profile),
   changePassword: (currentPassword, newPassword) =>
-    apiClient.put("/users/password", { currentPassword, newPassword }),
+    apiClient.put("/users/change-password", { currentPassword, newPassword }),
 };
 
 // Addresses API

@@ -38,7 +38,7 @@
 - **Backend Routes Updated**:
   - `GET /users/profile` - Get user profile
   - `PUT /users/profile` - Update profile
-  - `PUT /users/password` - Change password
+  - `PUT /users/change-password` - Change password
 - **Status**: ✅ FIXED
 
 ### 4. Enhanced JWT_SECRET Validation
