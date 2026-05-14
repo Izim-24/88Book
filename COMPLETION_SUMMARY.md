@@ -157,7 +157,7 @@ GET    /api/users/public/:id   Get public user info
 | **SETUP_GUIDE.md**            | 📖 Detailed setup instructions & API docs |
 | **VERIFICATION_CHECKLIST.md** | ✅ Testing all features                   |
 | **README.md**                 | 📋 Complete project documentation         |
-| **backend/README.md**         | 🔧 Backend API documentation              |
+| **README.md**                 | 🔧 Frontend, backend, database, and API documentation |
 
 ---
 
@@ -311,7 +311,7 @@ btl_web/
 2. **Setting Up?** → Follow `QUICK_START.md`
 3. **Need Details?** → Check `SETUP_GUIDE.md`
 4. **Testing?** → Use `VERIFICATION_CHECKLIST.md`
-5. **API Questions?** → See `backend/README.md`
+5. **API Questions?** → See `README.md`
 
 ---
 
@@ -354,7 +354,7 @@ All common issues and solutions are documented:
 
 - See `QUICK_START.md` for quick fixes
 - See `SETUP_GUIDE.md` for detailed troubleshooting
-- Check `backend/README.md` for API issues
+- Check `README.md` for API issues
 - Review browser console (F12) for errors
 
 ---

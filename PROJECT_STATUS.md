@@ -55,7 +55,7 @@ All critical and major issues have been identified and fixed. The project is now
 | TROUBLESHOOTING.md        | Quick fix guide & common issues | Root     |
 | CHANGELOG.md              | Detailed change log             | Root     |
 | Updated README.md         | Links to guides & quick start   | Root     |
-| Updated backend/README.md | Version info & setup            | Backend  |
+| Consolidated README.md    | Frontend, backend, database docs | Root     |
 
 ---
 
@@ -255,7 +255,7 @@ DELETE /api/users/wishlist/:id  - Remove from wishlist (protected)
 │   ├── server.js                    ✅ Validated
 │   ├── package.json                 ✅ Validated
 │   ├── .env                         ✅ Created
-│   └── README.md                    ✅ Updated
+│   └── server.js                    ✅ Backend entry point
 │
 ├── frontend/
 │   ├── src/
@@ -313,7 +313,7 @@ DELETE /api/users/wishlist/:id  - Remove from wishlist (protected)
 
 For detailed troubleshooting: See [TROUBLESHOOTING.md](./TROUBLESHOOTING.md)
 
-For API details: See [backend/README.md](./backend/README.md)
+For API details: See [README.md](./README.md)
 
 For setup instructions: See [SETUP_GUIDE.md](./SETUP_GUIDE.md)
 

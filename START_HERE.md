@@ -200,7 +200,7 @@ See: **[VERIFICATION_CHECKLIST.md](./VERIFICATION_CHECKLIST.md)**
 | [QUICK_START.md](./QUICK_START.md)                       | 5-10 min setup            |
 | [SETUP_GUIDE.md](./SETUP_GUIDE.md)                       | Detailed setup & API docs |
 | [VERIFICATION_CHECKLIST.md](./VERIFICATION_CHECKLIST.md) | Testing guide             |
-| [backend/README.md](./backend/README.md)                 | Backend API documentation |
+| [README.md](./README.md)                                 | Frontend, backend, database, and API documentation |
 
 ---
 

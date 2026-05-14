@@ -224,7 +224,7 @@ Before deploying to production:
 For issues or questions:
 
 1. Check [TROUBLESHOOTING.md](./TROUBLESHOOTING.md)
-2. Review [backend/README.md](./backend/README.md)
+2. Review [README.md](./README.md)
 3. Check logs in console/terminal
 
 ---
