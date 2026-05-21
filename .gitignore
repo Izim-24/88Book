@@ -14,3 +14,9 @@ yarn-error.log*
 coverage/
 pnpm-lock.yaml
 *.tgz
+
+# Generated reports and local document exports
+.report_work/
+.docx_render_check/
+*.docx
+*.pdf
