@@ -1,5 +1,6 @@
 import pool from "../config/database.js";
 import bcrypt from "bcryptjs";
+import { ORDER_STATUSES } from "../constants/orderStatus.js";
 
 const editableRoles = ["admin", "buyer"];
 
@@ -387,17 +388,11 @@ export const updateOrderStatus = async (req, res) => {
   try {
     const { orderId } = req.params;
     const { status } = req.body;
-    const validStatuses = [
-      "pending",
-      "processing",
-      "shipped",
-      "delivered",
-      "cancelled",
-    ];
-    if (!validStatuses.includes(status)) {
+
+    if (!ORDER_STATUSES.includes(status)) {
       return res.status(400).json({
         success: false,
-        message: "Invalid status",
+        message: `Invalid status. Must be one of: ${ORDER_STATUSES.join(", ")}`,
       });
     }
 

@@ -27,7 +27,7 @@ export interface Order {
   id: string;
   date: string;
   total: number;
-  status: "delivered" | "shipped" | "processing" | "cancelled";
+  status: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
   items: {
     bookTitle: string;
     quantity: number;
@@ -142,6 +142,8 @@ export function AccountPage({
 
   const getStatusColor = (status: Order["status"]) => {
     switch (status) {
+      case "pending":
+        return "bg-gray-500";
       case "delivered":
         return "bg-green-500";
       case "shipped":

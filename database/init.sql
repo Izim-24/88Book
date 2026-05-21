@@ -75,6 +75,28 @@ BEGIN
 END;
 GO
 
+IF OBJECT_ID(N'dbo.orders', N'U') IS NOT NULL
+BEGIN
+    UPDATE dbo.orders SET status = N'processing', updated_at = GETDATE() WHERE status = N'approved';
+    UPDATE dbo.orders SET status = N'shipped', updated_at = GETDATE() WHERE status = N'shipping';
+    UPDATE dbo.orders
+    SET status = N'pending', updated_at = GETDATE()
+    WHERE status IS NULL OR status NOT IN (N'pending', N'processing', N'shipped', N'delivered', N'cancelled');
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM sys.check_constraints
+        WHERE name = N'CK_orders_status'
+          AND parent_object_id = OBJECT_ID(N'dbo.orders')
+    )
+    BEGIN
+        ALTER TABLE dbo.orders
+        ADD CONSTRAINT CK_orders_status
+        CHECK (status IN (N'pending', N'processing', N'shipped', N'delivered', N'cancelled'));
+    END;
+END;
+GO
+
 IF OBJECT_ID(N'dbo.order_items', N'U') IS NULL
 BEGIN
     CREATE TABLE dbo.order_items (

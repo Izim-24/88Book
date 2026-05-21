@@ -73,6 +73,29 @@ const createTables = async () => {
     `);
 
     await pool.query(`
+      IF OBJECT_ID('orders', 'U') IS NOT NULL
+      BEGIN
+        UPDATE orders SET status = 'processing', updated_at = GETDATE() WHERE status = 'approved';
+        UPDATE orders SET status = 'shipped', updated_at = GETDATE() WHERE status = 'shipping';
+        UPDATE orders
+        SET status = 'pending', updated_at = GETDATE()
+        WHERE status IS NULL OR status NOT IN ('pending', 'processing', 'shipped', 'delivered', 'cancelled');
+
+        IF NOT EXISTS (
+          SELECT 1
+          FROM sys.check_constraints
+          WHERE name = 'CK_orders_status'
+            AND parent_object_id = OBJECT_ID('orders')
+        )
+        BEGIN
+          ALTER TABLE orders
+          ADD CONSTRAINT CK_orders_status
+          CHECK (status IN ('pending', 'processing', 'shipped', 'delivered', 'cancelled'));
+        END
+      END
+    `);
+
+    await pool.query(`
       IF OBJECT_ID('order_items', 'U') IS NULL
       BEGIN
         CREATE TABLE order_items (

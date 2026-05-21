@@ -1,4 +1,9 @@
 import pool from "../config/database.js";
+import {
+  CANCELLABLE_ORDER_STATUSES,
+  ORDER_STATUS,
+  ORDER_STATUSES,
+} from "../constants/orderStatus.js";
 
 const getOrderItems = async (orderId) => {
   const itemsResult = await pool.query(
@@ -56,7 +61,7 @@ export const createOrder = async (req, res) => {
       `INSERT INTO orders (user_id, total_amount, status, shipping_address, payment_method)
        OUTPUT INSERTED.*
        VALUES ($1, $2, $3, $4, $5)`,
-      [userId, totalAmount, "pending", shippingAddress, paymentMethod],
+      [userId, totalAmount, ORDER_STATUS.PENDING, shippingAddress, paymentMethod],
     );
 
     const order = orderResult.rows[0];
@@ -178,7 +183,7 @@ export const cancelOrder = async (req, res) => {
 
     const orderResult = await pool.query(
       "SELECT * FROM orders WHERE id = $1 AND user_id = $2 AND status IN ($3, $4)",
-      [orderId, userId, "pending", "processing"],
+      [orderId, userId, ...CANCELLABLE_ORDER_STATUSES],
     );
 
     if (orderResult.rows.length === 0) {
@@ -190,7 +195,7 @@ export const cancelOrder = async (req, res) => {
 
     // Update order status
     await pool.query("UPDATE orders SET status = $1 WHERE id = $2", [
-      "cancelled",
+      ORDER_STATUS.CANCELLED,
       orderId,
     ]);
 
@@ -227,8 +232,9 @@ export const getAdminPendingOrders = async (req, res) => {
       `SELECT o.*, u.full_name, u.email
        FROM orders o
        JOIN users u ON o.user_id = u.id
-       WHERE o.status = 'pending'
+       WHERE o.status = $1
        ORDER BY o.created_at ASC`,
+      [ORDER_STATUS.PENDING],
     );
 
     const orders = await Promise.all(
@@ -252,14 +258,14 @@ export const getAdminPendingOrders = async (req, res) => {
   }
 };
 
-// Admin: Approve order (pending -> approved)
+// Admin: Approve order (pending -> processing)
 export const approveOrder = async (req, res) => {
   try {
     const { orderId } = req.params;
 
     const orderResult = await pool.query(
       "SELECT * FROM orders WHERE id = $1 AND status = $2",
-      [orderId, "pending"],
+      [orderId, ORDER_STATUS.PENDING],
     );
 
     if (orderResult.rows.length === 0) {
@@ -269,15 +275,15 @@ export const approveOrder = async (req, res) => {
       });
     }
 
-    // Update order status to approved
+    // Approval means the store starts processing the order.
     await pool.query(
       "UPDATE orders SET status = $1, updated_at = GETDATE() WHERE id = $2",
-      ["approved", orderId],
+      [ORDER_STATUS.PROCESSING, orderId],
     );
 
     res.json({
       success: true,
-      message: "Order approved successfully",
+      message: "Order approved and moved to processing",
     });
   } catch (error) {
     console.error(error);
@@ -288,17 +294,16 @@ export const approveOrder = async (req, res) => {
   }
 };
 
-// Admin: Update order status (approved -> shipping -> shipped -> delivered)
+// Admin: Update order status with the shared order lifecycle.
 export const updateOrderStatus = async (req, res) => {
   try {
     const { orderId } = req.params;
     const { status } = req.body;
 
-    const validStatuses = ["approved", "shipping", "shipped", "delivered"];
-    if (!validStatuses.includes(status)) {
+    if (!ORDER_STATUSES.includes(status)) {
       return res.status(400).json({
         success: false,
-        message: `Invalid status. Must be one of: ${validStatuses.join(", ")}`,
+        message: `Invalid status. Must be one of: ${ORDER_STATUSES.join(", ")}`,
       });
     }
 
