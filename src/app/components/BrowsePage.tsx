@@ -17,6 +17,7 @@ interface BrowsePageProps {
   initialSection?: "all" | "new-arrivals" | "top-rated";
   onToggleWishlist?: (book: Book) => void;
   wishlist?: Book[];
+  onSearchRecorded?: (query: string) => void;
 }
 
 const categories = [
@@ -28,6 +29,9 @@ const categories = [
   "Fantasy",
   "Biography",
   "Self-Help",
+  "Psychology",
+  "Business",
+  "Manga",
   "Cooking",
   "Classic",
 ];
@@ -47,6 +51,7 @@ export function BrowsePage({
   initialSection = "all",
   onToggleWishlist,
   wishlist,
+  onSearchRecorded,
 }: BrowsePageProps) {
   const [searchQuery, setSearchQuery] = useState(initialSearchQuery);
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
@@ -61,6 +66,17 @@ export function BrowsePage({
   useEffect(() => {
     setSearchQuery(initialSearchQuery);
   }, [initialSearchQuery]);
+
+  useEffect(() => {
+    const query = searchQuery.trim();
+    if (query.length < 2) return;
+
+    const timeoutId = window.setTimeout(() => {
+      onSearchRecorded?.(query);
+    }, 800);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [searchQuery]);
 
   // Format books from API response to match Book interface
   const formattedBooks = books.map((book: any) => ({

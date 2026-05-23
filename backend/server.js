@@ -38,6 +38,7 @@ import bookRoutes from "./routes/books.js";
 import cartRoutes from "./routes/cart.js";
 import orderRoutes from "./routes/orders.js";
 import adminRoutes from "./routes/admin.js";
+import recommendationRoutes from "./routes/recommendations.js";
 
 // API Routes
 app.use("/api/auth", authRoutes);
@@ -46,6 +47,7 @@ app.use("/api/books", bookRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/recommendations", recommendationRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

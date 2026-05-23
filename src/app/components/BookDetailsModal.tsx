@@ -1,4 +1,4 @@
-import { X, ShoppingCart } from "lucide-react";
+import { X, ShoppingCart, Users } from "lucide-react";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { Book } from "./BookCard";
 
@@ -7,6 +7,8 @@ interface BookDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAddToCart: (book: Book) => void;
+  alsoBoughtBooks?: Book[];
+  onViewRelatedBook?: (book: Book) => void;
 }
 
 export function BookDetailsModal({
@@ -14,6 +16,8 @@ export function BookDetailsModal({
   isOpen,
   onClose,
   onAddToCart,
+  alsoBoughtBooks = [],
+  onViewRelatedBook,
 }: BookDetailsModalProps) {
   if (!isOpen || !book) {
     return null;
@@ -105,6 +109,43 @@ export function BookDetailsModal({
                     {book.description}
                   </p>
                 </div>
+
+                {alsoBoughtBooks.length > 0 && (
+                  <div className="mb-6 pt-5 border-t border-border">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Users className="w-4 h-4 text-primary" />
+                      <p className="font-semibold">
+                        Người mua sách này cũng mua
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {alsoBoughtBooks.slice(0, 3).map((relatedBook) => (
+                        <button
+                          key={`also-bought-${relatedBook.id}`}
+                          type="button"
+                          onClick={() => onViewRelatedBook?.(relatedBook)}
+                          className="text-left rounded-lg border border-border bg-background hover:border-primary hover:bg-secondary/70 transition-colors overflow-hidden"
+                        >
+                          <div className="aspect-[3/4] bg-muted">
+                            <ImageWithFallback
+                              src={relatedBook.coverImage}
+                              alt={relatedBook.title}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <div className="p-3">
+                            <p className="text-sm font-semibold line-clamp-2">
+                              {relatedBook.title}
+                            </p>
+                            <p className="text-xs text-muted-foreground line-clamp-1">
+                              {relatedBook.author}
+                            </p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Action Buttons */}
                 <div className="flex gap-3">

@@ -159,6 +159,31 @@ BEGIN
 END;
 GO
 
+IF OBJECT_ID(N'dbo.book_search_history', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.book_search_history (
+        id INT IDENTITY(1,1) PRIMARY KEY,
+        user_id INT NOT NULL,
+        query NVARCHAR(255) NOT NULL,
+        created_at DATETIME DEFAULT GETDATE(),
+        CONSTRAINT FK_book_search_history_user FOREIGN KEY (user_id) REFERENCES dbo.users(id) ON DELETE CASCADE
+    );
+END;
+GO
+
+IF OBJECT_ID(N'dbo.book_search_history', N'U') IS NOT NULL
+   AND NOT EXISTS (
+       SELECT 1
+       FROM sys.indexes
+       WHERE name = N'IX_book_search_history_user_created'
+         AND object_id = OBJECT_ID(N'dbo.book_search_history')
+   )
+BEGIN
+    CREATE INDEX IX_book_search_history_user_created
+    ON dbo.book_search_history(user_id, created_at DESC);
+END;
+GO
+
 -- Migrate older local databases that were created before admin-owned books.
 IF OBJECT_ID(N'dbo.books', N'U') IS NOT NULL AND COL_LENGTH(N'dbo.books', N'admin_id') IS NULL
 BEGIN

@@ -1,5 +1,5 @@
 /* @ts-nocheck */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Navigation } from "./components/Navigation";
 import { BookCard, Book } from "./components/BookCard";
 import { BrowsePage } from "./components/BrowsePage";
@@ -13,6 +13,7 @@ import {
 } from "./components/AccountPage";
 import { AdminDashboard } from "./components/AdminDashboard";
 import { BookDetailsModal } from "./components/BookDetailsModal";
+import { AIRecommendations } from "./components/AIRecommendations";
 import {
   ArrowRight,
   Star,
@@ -28,6 +29,7 @@ import {
   ChefHat,
   Drama,
   Leaf,
+  Brain,
   Truck,
   ShieldCheck,
 } from "lucide-react";
@@ -39,6 +41,7 @@ import {
   addressesAPI,
   wishlistAPI,
   usersAPI,
+  recommendationsAPI,
 } from "../api/client";
 
 function AppContent() {
@@ -52,6 +55,16 @@ function AppContent() {
   const [loading, setLoading] = useState(true);
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [aiRecommendationLoading, setAIRecommendationLoading] = useState(false);
+  const [aiSections, setAISections] = useState({
+    forYou: [],
+    mightLike: [],
+    alsoBought: [],
+  });
+  const [aiProfile, setAIProfile] = useState(null);
+  const [aiAnchorBook, setAIAnchorBook] = useState(null);
+  const [alsoBoughtBooks, setAlsoBoughtBooks] = useState<Book[]>([]);
+  const lastRecordedSearch = useRef("");
 
   const { user, isAuthenticated, logout, login, register } = useAuth();
   const {
@@ -90,6 +103,61 @@ function AppContent() {
     }
   };
 
+  const normalizeBook = (book: any): Book => ({
+    ...book,
+    id: book.id.toString(),
+    title: book.title,
+    author: book.author,
+    price: Number(book.price),
+    coverImage:
+      book.coverImage ||
+      book.image_url ||
+      "https://images.unsplash.com/photo-1507842872392-6f3ee53daf26?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=400",
+    category: book.category || "General",
+    rating: Number(book.rating) || 4.5,
+    description: book.description || "No description available",
+  });
+
+  const normalizeBooks = (items: any[] = []) => items.map(normalizeBook);
+
+  const loadPersonalizedRecommendations = async () => {
+    if (!isAuthenticated) {
+      setAISections({ forYou: [], mightLike: [], alsoBought: [] });
+      setAIProfile(null);
+      setAIAnchorBook(null);
+      return;
+    }
+
+    try {
+      setAIRecommendationLoading(true);
+      const response = await recommendationsAPI.getPersonalized();
+      if (response.success) {
+        setAISections({
+          forYou: normalizeBooks(response.sections?.forYou),
+          mightLike: normalizeBooks(response.sections?.mightLike),
+          alsoBought: normalizeBooks(response.sections?.alsoBought),
+        });
+        setAIProfile(response.profile || null);
+        setAIAnchorBook(response.anchorBook || null);
+      }
+    } finally {
+      setAIRecommendationLoading(false);
+    }
+  };
+
+  const recordSearchTerm = (query: string) => {
+    const searchTerm = query.trim();
+    if (!isAuthenticated || searchTerm.length < 2) return;
+    if (lastRecordedSearch.current === searchTerm.toLowerCase()) return;
+
+    lastRecordedSearch.current = searchTerm.toLowerCase();
+    recommendationsAPI.recordSearch(searchTerm).then((response) => {
+      if (response.success) {
+        loadPersonalizedRecommendations();
+      }
+    });
+  };
+
   // Fetch books on mount
   useEffect(() => {
     const loadBooks = async () => {
@@ -117,6 +185,34 @@ function AppContent() {
 
     loadBooks();
   }, [selectedCategory]);
+
+  useEffect(() => {
+    loadPersonalizedRecommendations();
+  }, [isAuthenticated, user?.id]);
+
+  useEffect(() => {
+    let ignore = false;
+
+    const loadAlsoBoughtBooks = async () => {
+      if (!isModalOpen || !selectedBook?.id) {
+        setAlsoBoughtBooks([]);
+        return;
+      }
+
+      const response = await recommendationsAPI.getAlsoBought(selectedBook.id);
+      if (!ignore) {
+        setAlsoBoughtBooks(
+          response.success ? normalizeBooks(response.books || []) : [],
+        );
+      }
+    };
+
+    loadAlsoBoughtBooks();
+
+    return () => {
+      ignore = true;
+    };
+  }, [isModalOpen, selectedBook?.id]);
 
   useEffect(() => {
     const handleRecommendationsUpdated = (event: Event) => {
@@ -218,6 +314,7 @@ function AppContent() {
     const result = await addItem(book.id, 1);
     if (result.success) {
       alert("Item added to cart!");
+      loadPersonalizedRecommendations();
     }
   };
 
@@ -252,6 +349,7 @@ function AppContent() {
   };
 
   const handleOrderComplete = () => {
+    loadPersonalizedRecommendations();
     handleNavigate("home");
   };
 
@@ -300,19 +398,26 @@ function AppContent() {
     );
     if (isWishlisted) {
       const res = await wishlistAPI.remove(book.id);
-      if (res.success)
+      if (res.success) {
         setWishlist((prev) =>
           prev.filter((b) => b.id.toString() !== book.id.toString()),
         );
+        loadPersonalizedRecommendations();
+      }
     } else {
       const res = await wishlistAPI.add(book.id);
-      if (res.success) setWishlist((prev) => [book, ...prev]);
+      if (res.success) {
+        setWishlist((prev) => [book, ...prev]);
+        loadPersonalizedRecommendations();
+      }
     }
   };
 
   const handleHeroSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setBrowseSearchQuery(searchQuery.trim());
+    const query = searchQuery.trim();
+    setBrowseSearchQuery(query);
+    recordSearchTerm(query);
     handleNavigate("browse");
   };
 
@@ -336,7 +441,9 @@ function AppContent() {
   };
 
   const handleTopSearch = (query: string) => {
-    setBrowseSearchQuery(query);
+    const searchTerm = query.trim();
+    setBrowseSearchQuery(searchTerm);
+    recordSearchTerm(searchTerm);
     // Global navbar search should search across all categories.
     setSelectedCategory("All");
     if (currentPage !== "browse") {
@@ -352,6 +459,9 @@ function AppContent() {
     Biography: UserRound,
     Romance: Heart,
     "Self-Help": BookHeart,
+    Psychology: Brain,
+    Business: TrendingUp,
+    Manga: BookMarked,
     Cooking: ChefHat,
     Classic: BookMarked,
   };
@@ -512,6 +622,22 @@ function AppContent() {
             </div>
           </section>
 
+          <AIRecommendations
+            isLoggedIn={isAuthenticated}
+            loading={aiRecommendationLoading}
+            sections={aiSections}
+            profile={aiProfile}
+            anchorBook={aiAnchorBook}
+            wishlist={wishlist}
+            onLoginClick={() => handleNavigate("account")}
+            onAddToCart={handleAddToCart}
+            onViewDetails={(book) => {
+              setSelectedBook(book);
+              setIsModalOpen(true);
+            }}
+            onToggleWishlist={handleToggleWishlist}
+          />
+
           {/* Recommendations */}
           <section className="section-block section-soft px-4 sm:px-6 lg:px-8">
             <div className="max-w-7xl mx-auto">
@@ -579,6 +705,9 @@ function AppContent() {
                   "Biography",
                   "Romance",
                   "Self-Help",
+                  "Psychology",
+                  "Business",
+                  "Manga",
                   "Cooking",
                   "Classic",
                 ].map((category) => {
@@ -623,6 +752,7 @@ function AppContent() {
           initialSearchQuery={browseSearchQuery}
           onToggleWishlist={handleToggleWishlist}
           wishlist={wishlist}
+          onSearchRecorded={recordSearchTerm}
         />
       )}
 
@@ -758,6 +888,10 @@ function AppContent() {
           setSelectedBook(null);
         }}
         onAddToCart={handleAddToCart}
+        alsoBoughtBooks={alsoBoughtBooks}
+        onViewRelatedBook={(book) => {
+          setSelectedBook(book);
+        }}
       />
     </div>
   );

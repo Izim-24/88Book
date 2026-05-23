@@ -121,6 +121,15 @@ export const booksAPI = {
   delete: (id) => apiClient.delete(`/books/${id}`),
 };
 
+// AI Recommendations API
+export const recommendationsAPI = {
+  getPersonalized: () => apiClient.get("/recommendations/personalized"),
+  recordSearch: (query) =>
+    apiClient.post("/recommendations/search-history", { query }),
+  getAlsoBought: (bookId) =>
+    apiClient.get(`/recommendations/books/${bookId}/also-bought`),
+};
+
 // Cart API
 export const cartAPI = {
   getCart: () => apiClient.get("/cart"),
