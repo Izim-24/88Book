@@ -1,11 +1,4 @@
-import {
-  ArrowRight,
-  Brain,
-  LogIn,
-  Sparkles,
-  Users,
-  type LucideIcon,
-} from "lucide-react";
+import { ArrowRight, Brain, LogIn, Sparkles, type LucideIcon } from "lucide-react";
 import { BookCard, Book } from "./BookCard";
 
 interface RecommendationProfile {
@@ -112,7 +105,7 @@ export function AIRecommendations({
   const hasRecommendations =
     sections.forYou.length ||
     sections.mightLike.length ||
-    sections.alsoBought.length;
+    sections.mightLike.length;
 
   return (
     <section className="section-block px-4 sm:px-6 lg:px-8">
@@ -186,21 +179,6 @@ export function AIRecommendations({
               books={sections.mightLike}
               icon={ArrowRight}
               badge="AI Match"
-              wishlist={wishlist}
-              onAddToCart={onAddToCart}
-              onViewDetails={onViewDetails}
-              onToggleWishlist={onToggleWishlist}
-            />
-            <RecommendationShelf
-              title="Người mua sách này cũng mua"
-              subtitle={
-                anchorBook?.title
-                  ? `Dựa trên độc giả cũng mua "${anchorBook.title}".`
-                  : "Dựa trên các cặp sách thường được mua cùng nhau."
-              }
-              books={sections.alsoBought}
-              icon={Users}
-              badge="Also Bought"
               wishlist={wishlist}
               onAddToCart={onAddToCart}
               onViewDetails={onViewDetails}

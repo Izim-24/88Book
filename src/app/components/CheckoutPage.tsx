@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { CartItem } from "./CartPage";
-import { CheckCircle } from "lucide-react";
+import { Banknote, CheckCircle, CreditCard, Loader2 } from "lucide-react";
 import { ordersAPI } from "../../api/client";
 
 interface CheckoutPageProps {
@@ -12,19 +11,32 @@ interface CheckoutPageProps {
     quantity: number;
   }>;
   total: number;
+  onOrderPlaced?: () => void;
   onOrderComplete: () => void;
   onCancel: () => void;
 }
 
+type PaymentMethod = "demo_card" | "cash_on_delivery";
+
 export function CheckoutPage({
   items,
   total,
+  onOrderPlaced,
   onOrderComplete,
   onCancel,
 }: CheckoutPageProps) {
   const [step, setStep] = useState<"form" | "confirmation">("form");
   const [loading, setLoading] = useState(false);
+  const [processingStage, setProcessingStage] = useState<
+    "idle" | "payment" | "order"
+  >("idle");
   const [error, setError] = useState("");
+  const [paymentMethod, setPaymentMethod] =
+    useState<PaymentMethod>("demo_card");
+  const [confirmedOrder, setConfirmedOrder] = useState<{
+    items: CheckoutPageProps["items"];
+    total: number;
+  }>({ items: [], total: 0 });
   const [formData, setFormData] = useState({
     email: "",
     firstName: "",
@@ -43,8 +55,9 @@ export function CheckoutPage({
     0,
   );
   const tax = subtotal * 0.08;
-  const shipping = 5.99;
+  const shipping = items.length > 0 ? 5.99 : 0;
   const calculatedTotal = subtotal + tax + shipping;
+  const displayTotal = total > 0 && items.length > 0 ? calculatedTotal : 0;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -53,17 +66,37 @@ export function CheckoutPage({
     });
   };
 
+  const handleUseDemoCard = () => {
+    setFormData((current) => ({
+      ...current,
+      cardNumber: "4242 4242 4242 4242",
+      expiryDate: "12/30",
+      cvv: "123",
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
+    setProcessingStage("payment");
 
     try {
+      if (items.length === 0) {
+        setError("Your cart is empty");
+        return;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 700));
+      setProcessingStage("order");
+
       // Create order in backend
-      const shippingAddress = `${formData.address}, ${formData.city}, ${formData.state} ${formData.zipCode}`;
-      const result = await ordersAPI.create(shippingAddress, "credit_card");
+      const shippingAddress = `${formData.firstName} ${formData.lastName}, ${formData.address}, ${formData.city}, ${formData.state} ${formData.zipCode}`;
+      const result = await ordersAPI.create(shippingAddress, paymentMethod);
 
       if (result.success) {
+        setConfirmedOrder({ items: [...items], total: displayTotal });
+        onOrderPlaced?.();
         setStep("confirmation");
       } else {
         setError(result.message || "Failed to create order");
@@ -73,10 +106,15 @@ export function CheckoutPage({
       console.error("Order error:", err);
     } finally {
       setLoading(false);
+      setProcessingStage("idle");
     }
   };
 
   if (step === "confirmation") {
+    const confirmationItems =
+      confirmedOrder.items.length > 0 ? confirmedOrder.items : items;
+    const confirmationTotal = confirmedOrder.total || displayTotal;
+
     return (
       <main className="py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-2xl mx-auto text-center">
@@ -84,9 +122,9 @@ export function CheckoutPage({
             <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <CheckCircle className="w-12 h-12 text-green-600" />
             </div>
-            <h1 className="mb-4">Order Confirmed!</h1>
+            <h1 className="mb-4">Payment Complete!</h1>
             <p className="text-muted-foreground mb-6">
-              Thank you for your purchase! We've sent a confirmation email to{" "}
+              Your order has been placed. We've sent a confirmation email to{" "}
               <span className="font-medium text-foreground">
                 {formData.email}
               </span>
@@ -95,7 +133,7 @@ export function CheckoutPage({
             <div className="bg-muted rounded-lg p-6 mb-8">
               <h3 className="mb-4">Order Summary</h3>
               <div className="space-y-2 text-sm">
-                {items.map((item) => (
+                {confirmationItems.map((item) => (
                   <div key={item.id} className="flex justify-between">
                     <span className="text-muted-foreground">
                       {item.title} x {item.quantity}
@@ -106,7 +144,15 @@ export function CheckoutPage({
                 <div className="border-t border-border pt-2 mt-2">
                   <div className="flex justify-between font-semibold">
                     <span>Total</span>
-                    <span>${calculatedTotal.toFixed(2)}</span>
+                    <span>${confirmationTotal.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Payment</span>
+                    <span>
+                      {paymentMethod === "demo_card"
+                        ? "Demo card"
+                        : "Pay on delivery"}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -263,54 +309,106 @@ export function CheckoutPage({
             <div className="bg-card rounded-lg border border-border p-6">
               <h2 className="mb-4">Payment Information</h2>
               <div className="space-y-4">
-                <div>
-                  <label htmlFor="cardNumber" className="block mb-2">
-                    Card Number
-                  </label>
-                  <input
-                    type="text"
-                    id="cardNumber"
-                    name="cardNumber"
-                    required
-                    placeholder="1234 5678 9012 3456"
-                    value={formData.cardNumber}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 bg-input-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod("demo_card")}
+                    className={`flex items-center gap-3 rounded-lg border p-4 text-left transition-colors ${
+                      paymentMethod === "demo_card"
+                        ? "border-primary bg-secondary"
+                        : "border-border hover:bg-secondary/70"
+                    }`}
+                  >
+                    <CreditCard className="w-5 h-5 text-primary" />
+                    <span>
+                      <span className="block font-semibold">Demo card</span>
+                      <span className="block text-sm text-muted-foreground">
+                        Instant payment
+                      </span>
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod("cash_on_delivery")}
+                    className={`flex items-center gap-3 rounded-lg border p-4 text-left transition-colors ${
+                      paymentMethod === "cash_on_delivery"
+                        ? "border-primary bg-secondary"
+                        : "border-border hover:bg-secondary/70"
+                    }`}
+                  >
+                    <Banknote className="w-5 h-5 text-primary" />
+                    <span>
+                      <span className="block font-semibold">
+                        Pay on delivery
+                      </span>
+                      <span className="block text-sm text-muted-foreground">
+                        Cash at pickup
+                      </span>
+                    </span>
+                  </button>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="expiryDate" className="block mb-2">
-                      Expiry Date
-                    </label>
-                    <input
-                      type="text"
-                      id="expiryDate"
-                      name="expiryDate"
-                      required
-                      placeholder="MM/YY"
-                      value={formData.expiryDate}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 bg-input-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="cvv" className="block mb-2">
-                      CVV
-                    </label>
-                    <input
-                      type="text"
-                      id="cvv"
-                      name="cvv"
-                      required
-                      placeholder="123"
-                      value={formData.cvv}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 bg-input-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
-                    />
-                  </div>
-                </div>
+                {paymentMethod === "demo_card" && (
+                  <>
+                    <div>
+                      <div className="flex items-center justify-between gap-3 mb-2">
+                        <label htmlFor="cardNumber" className="block">
+                          Card Number
+                        </label>
+                        <button
+                          type="button"
+                          onClick={handleUseDemoCard}
+                          className="text-sm text-primary hover:underline"
+                        >
+                          Use demo card
+                        </button>
+                      </div>
+                      <input
+                        type="text"
+                        id="cardNumber"
+                        name="cardNumber"
+                        required={paymentMethod === "demo_card"}
+                        placeholder="4242 4242 4242 4242"
+                        value={formData.cardNumber}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-3 bg-input-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="expiryDate" className="block mb-2">
+                          Expiry Date
+                        </label>
+                        <input
+                          type="text"
+                          id="expiryDate"
+                          name="expiryDate"
+                          required={paymentMethod === "demo_card"}
+                          placeholder="MM/YY"
+                          value={formData.expiryDate}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-3 bg-input-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="cvv" className="block mb-2">
+                          CVV
+                        </label>
+                        <input
+                          type="text"
+                          id="cvv"
+                          name="cvv"
+                          required={paymentMethod === "demo_card"}
+                          placeholder="123"
+                          value={formData.cvv}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-3 bg-input-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -359,15 +457,20 @@ export function CheckoutPage({
 
               <div className="flex justify-between font-semibold mb-6">
                 <span>Total</span>
-                <span className="text-lg">${calculatedTotal.toFixed(2)}</span>
+                <span className="text-lg">${displayTotal.toFixed(2)}</span>
               </div>
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-primary text-primary-foreground py-3 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-primary text-primary-foreground py-3 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
               >
-                {loading ? "Processing..." : "Complete Order"}
+                {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+                {processingStage === "payment"
+                  ? "Authorizing Payment..."
+                  : processingStage === "order"
+                    ? "Placing Order..."
+                    : "Complete Payment"}
               </button>
 
               <button

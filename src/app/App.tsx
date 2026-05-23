@@ -74,6 +74,7 @@ function AppContent() {
     removeItem,
     updateItem,
     fetchCart,
+    resetCart,
   } = useCart();
 
   const [orders, setOrders] = useState<Order[]>([]);
@@ -299,11 +300,12 @@ function AppContent() {
         }
       });
     } else {
+      resetCart();
       setOrders([]);
       setAddresses([]);
       setWishlist([]);
     }
-  }, [isAuthenticated, fetchCart]);
+  }, [isAuthenticated, user?.id]);
 
   const handleAddToCart = async (book: Book) => {
     if (!isAuthenticated) {
@@ -349,11 +351,18 @@ function AppContent() {
   };
 
   const handleOrderComplete = () => {
+    resetCart();
     loadPersonalizedRecommendations();
     handleNavigate("home");
   };
 
+  const handleOrderPlaced = () => {
+    resetCart();
+    loadPersonalizedRecommendations();
+  };
+
   const handleLogout = () => {
+    resetCart();
     logout();
     handleNavigate("home");
   };
@@ -851,6 +860,7 @@ function AppContent() {
             (sum: number, item: any) => sum + item.price * item.quantity,
             0,
           )}
+          onOrderPlaced={handleOrderPlaced}
           onOrderComplete={handleOrderComplete}
           onCancel={() => handleNavigate("cart")}
         />

@@ -10,15 +10,34 @@ export const CartProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  const resetCart = () => {
+    setCartItems([]);
+    setTotalPrice(0);
+    setItemCount(0);
+    setError(null);
+  };
+
   // Fetch cart on mount or when auth changes
   const fetchCart = async () => {
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+      resetCart();
+      return;
+    }
+
     try {
       setLoading(true);
       const response = await cartAPI.getCart();
+      if (token !== localStorage.getItem("authToken")) {
+        return;
+      }
+
       if (response.success) {
         setCartItems(response.items);
         setTotalPrice(response.totalPrice);
         setItemCount(response.itemCount);
+      } else if (response.message?.toLowerCase().includes("token")) {
+        resetCart();
       }
     } catch (err) {
       console.error("Error fetching cart:", err);
@@ -100,6 +119,7 @@ export const CartProvider = ({ children }) => {
     updateItem,
     removeItem,
     clearCart,
+    resetCart,
   };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

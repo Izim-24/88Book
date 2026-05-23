@@ -5,6 +5,9 @@ import {
   ORDER_STATUSES,
 } from "../constants/orderStatus.js";
 
+const TAX_RATE = 0.08;
+const SHIPPING_FEE = 5.99;
+
 const getOrderItems = async (orderId) => {
   const itemsResult = await pool.query(
     `SELECT oi.book_id, oi.quantity, oi.price, b.title
@@ -51,10 +54,13 @@ export const createOrder = async (req, res) => {
     }
 
     const cartItems = cartResult.rows;
-    const totalAmount = cartItems.reduce(
-      (sum, item) => sum + item.quantity * item.price,
+    const subtotalAmount = cartItems.reduce(
+      (sum, item) => sum + item.quantity * Number(item.price),
       0,
     );
+    const taxAmount = subtotalAmount * TAX_RATE;
+    const shippingAmount = cartItems.length > 0 ? SHIPPING_FEE : 0;
+    const totalAmount = subtotalAmount + taxAmount + shippingAmount;
 
     // Create order
     const orderResult = await pool.query(
