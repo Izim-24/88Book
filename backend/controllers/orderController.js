@@ -61,13 +61,14 @@ export const createOrder = async (req, res) => {
     const taxAmount = subtotalAmount * TAX_RATE;
     const shippingAmount = cartItems.length > 0 ? SHIPPING_FEE : 0;
     const totalAmount = subtotalAmount + taxAmount + shippingAmount;
+    const initialStatus = ORDER_STATUS.PROCESSING;
 
     // Create order
     const orderResult = await pool.query(
       `INSERT INTO orders (user_id, total_amount, status, shipping_address, payment_method)
        OUTPUT INSERTED.*
        VALUES ($1, $2, $3, $4, $5)`,
-      [userId, totalAmount, ORDER_STATUS.PENDING, shippingAddress, paymentMethod],
+      [userId, totalAmount, initialStatus, shippingAddress, paymentMethod],
     );
 
     const order = orderResult.rows[0];
