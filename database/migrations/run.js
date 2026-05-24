@@ -62,7 +62,7 @@ const createTables = async () => {
           id INT IDENTITY(1,1) PRIMARY KEY,
           user_id INT NOT NULL,
           total_amount DECIMAL(10, 2) NOT NULL,
-          status NVARCHAR(50) DEFAULT 'pending',
+          status NVARCHAR(50) DEFAULT 'accepted',
           shipping_address NVARCHAR(MAX) NOT NULL,
           payment_method NVARCHAR(100),
           created_at DATETIME DEFAULT GETDATE(),
@@ -75,23 +75,42 @@ const createTables = async () => {
     await pool.query(`
       IF OBJECT_ID('orders', 'U') IS NOT NULL
       BEGIN
-        UPDATE orders SET status = 'processing', updated_at = GETDATE() WHERE status = 'approved';
-        UPDATE orders SET status = 'shipped', updated_at = GETDATE() WHERE status = 'shipping';
-        UPDATE orders
-        SET status = 'pending', updated_at = GETDATE()
-        WHERE status IS NULL OR status NOT IN ('pending', 'processing', 'shipped', 'delivered', 'cancelled');
-
-        IF NOT EXISTS (
+        IF EXISTS (
           SELECT 1
           FROM sys.check_constraints
           WHERE name = 'CK_orders_status'
             AND parent_object_id = OBJECT_ID('orders')
         )
         BEGIN
-          ALTER TABLE orders
-          ADD CONSTRAINT CK_orders_status
-          CHECK (status IN ('pending', 'processing', 'shipped', 'delivered', 'cancelled'));
+          ALTER TABLE orders DROP CONSTRAINT CK_orders_status;
         END
+
+        DECLARE @ordersStatusDefault NVARCHAR(255);
+        SELECT TOP 1 @ordersStatusDefault = dc.name
+        FROM sys.default_constraints dc
+        JOIN sys.columns c ON dc.parent_object_id = c.object_id AND dc.parent_column_id = c.column_id
+        WHERE dc.parent_object_id = OBJECT_ID('orders')
+          AND c.name = 'status';
+
+        IF @ordersStatusDefault IS NOT NULL
+        BEGIN
+          DECLARE @dropOrdersStatusDefaultSql NVARCHAR(MAX);
+          SET @dropOrdersStatusDefaultSql = N'ALTER TABLE orders DROP CONSTRAINT ' + QUOTENAME(@ordersStatusDefault);
+          EXEC sp_executesql @dropOrdersStatusDefaultSql;
+        END
+
+        ALTER TABLE orders
+        ADD CONSTRAINT DF_orders_status DEFAULT 'accepted' FOR status;
+
+        UPDATE orders SET status = 'accepted', updated_at = GETDATE() WHERE status IN ('approved', 'pending', 'processing');
+        UPDATE orders SET status = 'shipped', updated_at = GETDATE() WHERE status = 'shipping';
+        UPDATE orders
+        SET status = 'accepted', updated_at = GETDATE()
+        WHERE status IS NULL OR status NOT IN ('accepted', 'shipped', 'delivered', 'cancelled');
+
+        ALTER TABLE orders
+        ADD CONSTRAINT CK_orders_status
+        CHECK (status IN ('accepted', 'shipped', 'delivered', 'cancelled'));
       END
     `);
 

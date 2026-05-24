@@ -6,7 +6,7 @@ import {
   getUserOrders,
   getOrderDetails,
   cancelOrder,
-  getAdminPendingOrders,
+  getAdminAcceptedOrders,
   approveOrder,
   updateOrderStatus,
 } from "../controllers/orderController.js";
@@ -15,10 +15,10 @@ const router = express.Router();
 
 // Admin routes - MUST be before :orderId parameterized routes
 router.get(
-  "/admin/pending",
+  "/admin/accepted",
   authenticateToken,
   authorizeRole("admin"),
-  getAdminPendingOrders,
+  getAdminAcceptedOrders,
 );
 
 // User routes

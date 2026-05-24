@@ -148,7 +148,7 @@ export const ordersAPI = {
   getById: (orderId) => apiClient.get(`/orders/${orderId}`),
   cancel: (orderId) => apiClient.put(`/orders/${orderId}/cancel`, {}),
   // Admin endpoints
-  getAdminPending: () => apiClient.get("/orders/admin/pending"),
+  getAdminAccepted: () => apiClient.get("/orders/admin/accepted"),
   approve: (orderId) => apiClient.put(`/orders/${orderId}/approve`, {}),
   updateStatus: (orderId, status) =>
     apiClient.put(`/orders/${orderId}/status`, { status }),

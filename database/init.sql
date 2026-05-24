@@ -65,7 +65,7 @@ BEGIN
         id INT IDENTITY(1,1) PRIMARY KEY,
         user_id INT NOT NULL,
         total_amount DECIMAL(10, 2) NOT NULL,
-        status NVARCHAR(50) DEFAULT N'pending',
+        status NVARCHAR(50) DEFAULT N'accepted',
         shipping_address NVARCHAR(MAX) NOT NULL,
         payment_method NVARCHAR(100),
         created_at DATETIME DEFAULT GETDATE(),
@@ -77,23 +77,42 @@ GO
 
 IF OBJECT_ID(N'dbo.orders', N'U') IS NOT NULL
 BEGIN
-    UPDATE dbo.orders SET status = N'processing', updated_at = GETDATE() WHERE status = N'approved';
-    UPDATE dbo.orders SET status = N'shipped', updated_at = GETDATE() WHERE status = N'shipping';
-    UPDATE dbo.orders
-    SET status = N'pending', updated_at = GETDATE()
-    WHERE status IS NULL OR status NOT IN (N'pending', N'processing', N'shipped', N'delivered', N'cancelled');
-
-    IF NOT EXISTS (
+    IF EXISTS (
         SELECT 1
         FROM sys.check_constraints
         WHERE name = N'CK_orders_status'
           AND parent_object_id = OBJECT_ID(N'dbo.orders')
     )
     BEGIN
-        ALTER TABLE dbo.orders
-        ADD CONSTRAINT CK_orders_status
-        CHECK (status IN (N'pending', N'processing', N'shipped', N'delivered', N'cancelled'));
+        ALTER TABLE dbo.orders DROP CONSTRAINT CK_orders_status;
     END;
+
+    DECLARE @ordersStatusDefault NVARCHAR(255);
+    SELECT TOP 1 @ordersStatusDefault = dc.name
+    FROM sys.default_constraints dc
+    JOIN sys.columns c ON dc.parent_object_id = c.object_id AND dc.parent_column_id = c.column_id
+    WHERE dc.parent_object_id = OBJECT_ID(N'dbo.orders')
+      AND c.name = N'status';
+
+    IF @ordersStatusDefault IS NOT NULL
+    BEGIN
+        DECLARE @dropOrdersStatusDefaultSql NVARCHAR(MAX);
+        SET @dropOrdersStatusDefaultSql = N'ALTER TABLE dbo.orders DROP CONSTRAINT ' + QUOTENAME(@ordersStatusDefault);
+        EXEC sp_executesql @dropOrdersStatusDefaultSql;
+    END;
+
+    ALTER TABLE dbo.orders
+    ADD CONSTRAINT DF_orders_status DEFAULT N'accepted' FOR status;
+
+    UPDATE dbo.orders SET status = N'accepted', updated_at = GETDATE() WHERE status IN (N'approved', N'pending', N'processing');
+    UPDATE dbo.orders SET status = N'shipped', updated_at = GETDATE() WHERE status = N'shipping';
+    UPDATE dbo.orders
+    SET status = N'accepted', updated_at = GETDATE()
+    WHERE status IS NULL OR status NOT IN (N'accepted', N'shipped', N'delivered', N'cancelled');
+
+    ALTER TABLE dbo.orders
+    ADD CONSTRAINT CK_orders_status
+    CHECK (status IN (N'accepted', N'shipped', N'delivered', N'cancelled'));
 END;
 GO
 

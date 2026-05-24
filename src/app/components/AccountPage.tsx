@@ -27,7 +27,14 @@ export interface Order {
   id: string;
   date: string;
   total: number;
-  status: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
+  status:
+    | "accepted"
+    | "pending"
+    | "processing"
+    | "approved"
+    | "shipped"
+    | "delivered"
+    | "cancelled";
   items: {
     bookTitle: string;
     quantity: number;
@@ -143,18 +150,31 @@ export function AccountPage({
   const getStatusColor = (status: Order["status"]) => {
     switch (status) {
       case "pending":
-        return "bg-gray-500";
+      case "processing":
+      case "approved":
+      case "accepted":
+        return "bg-green-600";
       case "delivered":
         return "bg-green-500";
       case "shipped":
         return "bg-blue-500";
-      case "processing":
-        return "bg-yellow-500";
       case "cancelled":
         return "bg-red-500";
       default:
         return "bg-gray-500";
     }
+  };
+
+  const getStatusLabel = (status: Order["status"]) => {
+    if (
+      status === "accepted" ||
+      status === "pending" ||
+      status === "processing" ||
+      status === "approved"
+    ) {
+      return "Accepted";
+    }
+    return status.charAt(0).toUpperCase() + status.slice(1);
   };
 
   const handleAuthSubmit = async (e: React.FormEvent) => {
@@ -507,8 +527,7 @@ export function AccountPage({
                             </p>
                           </div>
                           <Badge className={getStatusColor(order.status)}>
-                            {order.status.charAt(0).toUpperCase() +
-                              order.status.slice(1)}
+                            {getStatusLabel(order.status)}
                           </Badge>
                         </div>
                         <Separator />

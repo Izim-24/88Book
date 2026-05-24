@@ -121,6 +121,13 @@ function AppContent() {
 
   const normalizeBooks = (items: any[] = []) => items.map(normalizeBook);
 
+  const normalizeOrderStatus = (status: string) => {
+    if (["pending", "processing", "approved"].includes(status)) {
+      return "accepted";
+    }
+    return status;
+  };
+
   const loadPersonalizedRecommendations = async () => {
     if (!isAuthenticated) {
       setAISections({ forYou: [], mightLike: [], alsoBought: [] });
@@ -264,7 +271,7 @@ function AppContent() {
               id: `ORD-${o.id}`,
               date: new Date(o.created_at).toLocaleDateString(),
               total: Number(o.total_amount),
-              status: o.status,
+              status: normalizeOrderStatus(o.status),
               items: o.items
                 ? o.items.map((i: any) => ({
                     bookTitle: i.bookTitle || `Book #${i.bookId}`,

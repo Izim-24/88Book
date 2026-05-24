@@ -61,7 +61,7 @@ export const createOrder = async (req, res) => {
     const taxAmount = subtotalAmount * TAX_RATE;
     const shippingAmount = cartItems.length > 0 ? SHIPPING_FEE : 0;
     const totalAmount = subtotalAmount + taxAmount + shippingAmount;
-    const initialStatus = ORDER_STATUS.PROCESSING;
+    const initialStatus = ORDER_STATUS.ACCEPTED;
 
     // Create order
     const orderResult = await pool.query(
@@ -232,8 +232,8 @@ export const cancelOrder = async (req, res) => {
   }
 };
 
-// Admin: Get all pending orders
-export const getAdminPendingOrders = async (req, res) => {
+// Admin: Get accepted orders waiting to be shipped.
+export const getAdminAcceptedOrders = async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT o.*, u.full_name, u.email
@@ -241,7 +241,7 @@ export const getAdminPendingOrders = async (req, res) => {
        JOIN users u ON o.user_id = u.id
        WHERE o.status = $1
        ORDER BY o.created_at ASC`,
-      [ORDER_STATUS.PENDING],
+      [ORDER_STATUS.ACCEPTED],
     );
 
     const orders = await Promise.all(
@@ -260,37 +260,36 @@ export const getAdminPendingOrders = async (req, res) => {
     console.error(error);
     res.status(500).json({
       success: false,
-      message: "Error fetching pending orders",
+      message: "Error fetching accepted orders",
     });
   }
 };
 
-// Admin: Approve order (pending -> processing)
+// Admin: Keep the legacy approve endpoint as an accept action for demo orders.
 export const approveOrder = async (req, res) => {
   try {
     const { orderId } = req.params;
 
     const orderResult = await pool.query(
       "SELECT * FROM orders WHERE id = $1 AND status = $2",
-      [orderId, ORDER_STATUS.PENDING],
+      [orderId, ORDER_STATUS.ACCEPTED],
     );
 
     if (orderResult.rows.length === 0) {
       return res.status(404).json({
         success: false,
-        message: "Order not found or not in pending status",
+        message: "Order not found or not in accepted status",
       });
     }
 
-    // Approval means the store starts processing the order.
     await pool.query(
       "UPDATE orders SET status = $1, updated_at = GETDATE() WHERE id = $2",
-      [ORDER_STATUS.PROCESSING, orderId],
+      [ORDER_STATUS.ACCEPTED, orderId],
     );
 
     res.json({
       success: true,
-      message: "Order approved and moved to processing",
+      message: "Order accepted",
     });
   } catch (error) {
     console.error(error);
