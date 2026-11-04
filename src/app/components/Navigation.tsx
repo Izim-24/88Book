@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from "react";
-import { ShoppingCart, BookOpen, Search, User, Package, ArrowLeft, LogOut } from "lucide-react";
+import { ShoppingCart, BookOpen, Search, Camera, User, Package, ArrowLeft } from "lucide-react";
 
 interface NavigationProps {
   cartItemCount: number;
@@ -9,8 +9,8 @@ interface NavigationProps {
   userRole?: string;
   canGoBack?: boolean;
   onGoBack?: () => void;
-  onLogout?: () => void;
   onSearchSubmit?: (query: string) => void;
+  onOpenImageSearch?: () => void;
   searchSuggestions?: string[];
 }
 
@@ -22,8 +22,8 @@ export function Navigation({
   userRole,
   canGoBack = false,
   onGoBack,
-  onLogout,
   onSearchSubmit,
+  onOpenImageSearch,
   searchSuggestions = [],
 }: NavigationProps) {
   const [query, setQuery] = useState("");
@@ -130,6 +130,7 @@ export function Navigation({
             >
               <Search className="w-5 h-5" />
             </button>
+            <button type="button" onClick={onOpenImageSearch} className="p-2 hover:bg-accent rounded-lg transition-colors" aria-label="Search by image" title="Search by image"><Camera className="w-5 h-5" /></button>
             {isLoggedIn && userRole === "admin" && (
               <button
                 onClick={() => onNavigate("admin")}
@@ -152,16 +153,6 @@ export function Navigation({
             >
               <User className="w-5 h-5" />
             </button>
-            {isLoggedIn && onLogout && (
-              <button
-                onClick={onLogout}
-                className="p-2 hover:bg-accent rounded-lg transition-colors"
-                aria-label="Sign out"
-                title="Sign out"
-              >
-                <LogOut className="w-5 h-5" />
-              </button>
-            )}
             <button
               onClick={() => onNavigate("cart")}
               className="relative p-2 hover:bg-accent rounded-lg transition-colors"

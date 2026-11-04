@@ -79,6 +79,10 @@ export const changePassword = async (req, res) => {
       });
     }
 
+    if (newPassword.length < 8) {
+      return res.status(400).json({ success: false, message: "New password must be at least 8 characters" });
+    }
+
     const result = await pool.query(
       "SELECT password FROM users WHERE id = $1",
       [userId],
@@ -91,10 +95,10 @@ export const changePassword = async (req, res) => {
       });
     }
 
-    const validPassword = await bcrypt.compare(
-      currentPassword,
-      result.rows[0].password,
-    );
+    const storedPassword = result.rows[0].password;
+    const validPassword = storedPassword?.startsWith?.("$2")
+      ? await bcrypt.compare(currentPassword, storedPassword)
+      : currentPassword === storedPassword;
     if (!validPassword) {
       return res.status(401).json({
         success: false,

@@ -1,0 +1,411 @@
+@startuml
+title 5. UML Use Case Diagram
+left to right direction
+actor Guest
+actor Customer
+actor Administrator as Admin
+actor "Payment Gateway" as PaymentGateway
+actor "Shipping Provider" as ShippingProvider
+actor "Notification Provider" as NotificationProvider
+rectangle "Online Bookstore" {
+  usecase "Browse catalog" as Browse
+  usecase "Search / filter / sort books" as Search
+  usecase "Search by cover image" as ImageSearch
+  usecase "Register / log in / reset password" as Auth
+  usecase "Manage profile and addresses" as Profile
+  usecase "Manage cart and wishlist" as Shopping
+  usecase "Apply coupon" as Coupon
+  usecase "Checkout and create order" as Checkout
+  usecase "Pay online" as Pay
+  usecase "Choose COD" as COD
+  usecase "View / cancel eligible order" as OrderHistory
+  usecase "Track shipment" as Track
+  usecase "Review delivered book" as Review
+  usecase "Manage catalog, inventory and images" as ManageCatalog
+  usecase "Manage users, roles and promotions" as ManageUsers
+  usecase "Manage orders, payments and shipments" as ManageFulfillment
+  usecase "View sales reports" as Reports
+  usecase "Generate cover embedding" as Embed
+  usecase "Verify payment webhook" as VerifyPay
+  usecase "Process tracking webhook" as VerifyShip
+}
+Guest --> Browse
+Guest --> Search
+Guest --> ImageSearch
+Customer --> Browse
+Customer --> Search
+Customer --> ImageSearch
+Customer --> Auth
+Customer --> Profile
+Customer --> Shopping
+Customer --> Checkout
+Customer --> OrderHistory
+Customer --> Track
+Customer --> Review
+Admin --> ManageCatalog
+Admin --> ManageUsers
+Admin --> ManageFulfillment
+Admin --> Reports
+Checkout .> Auth : <<include>>
+Checkout .> Coupon : <<extend>>
+Checkout .> Pay : <<extend>>\n(prepaid)
+Checkout .> COD : <<extend>>\n(COD)
+Pay --> PaymentGateway
+PaymentGateway --> VerifyPay
+Track --> ShippingProvider
+ShippingProvider --> VerifyShip
+ManageCatalog .> Embed : <<include>>\n(on cover change)
+VerifyPay --> NotificationProvider
+VerifyShip --> NotificationProvider
+@enduml
+
+@startuml
+title 6. Book Search Activity Diagram
+start
+:Enter keywords or select filters;
+:Validate query, page size and sort;
+if (Input valid?) then (yes)
+  :Normalize query and filters;
+  :Search title, author, ISBN and category;
+  :Apply price, rating and availability filters;
+  :Sort and paginate;
+  if (Results found?) then (yes)
+    :Return books and page metadata;
+  else (no)
+    :Return empty result with search guidance;
+  endif
+else (no)
+  :Return validation error;
+endif
+stop
+@enduml
+
+@startuml
+title 7. Shopping Cart Activity Diagram
+start
+:Customer selects a book and quantity;
+:Authenticate customer;
+:Validate book, quantity and availability;
+if (Valid and available?) then (yes)
+  :Begin transaction;
+  :Upsert cart item for customer and book;
+  :Recalculate cart view from current catalog prices;
+  :Commit transaction;
+  :Return cart contents and totals;
+else (no)
+  :Return validation or availability error;
+endif
+if (Customer changes cart?) then (yes)
+  :Validate update or remove request;
+  :Persist change and recalculate cart;
+  :Show updated cart;
+else (no)
+  :Keep current cart;
+endif
+stop
+@enduml
+
+@startuml
+title 8. Checkout Activity Diagram
+start
+:Submit address, delivery service,\npayment method and idempotency key;
+:Authenticate and validate request;
+if (Request valid?) then (yes)
+  :Load cart and current book prices;
+  :Validate address, coupon and shipping quote;
+  :Begin database transaction;
+  :Lock inventory rows in stable order;
+  if (All quantities available?) then (yes)
+    :Calculate subtotal, discount,\nshipping fee and final total;
+    :Create pending order and immutable snapshots;
+    :Reserve inventory and coupon use;
+    :Persist payment intent or COD choice;
+    :Write outbox command when required;
+    :Commit transaction;
+    if (Payment method is prepaid?) then (yes)
+      :Initiate payment through gateway adapter;
+      if (Payment initiation accepted?) then (yes)
+        :Return payment action and pending order;
+      else (no)
+        :Keep order pending and enqueue reconciliation;
+        :Return retryable payment status;
+      endif
+    else (COD)
+      :Keep payment uncollected;
+      :Return order awaiting confirmation;
+    endif
+  else (no)
+    :Rollback and return unavailable quantities;
+  endif
+else (no)
+  :Return validation error;
+endif
+stop
+@enduml
+
+@startuml
+title 9. Order Cancellation Activity Diagram
+start
+:Customer requests cancellation;
+:Authenticate and load order under lock;
+if (Order owned by customer?) then (yes)
+  if (Order is cancellable\nand not handed to carrier?) then (yes)
+    :Mark order CANCELLED;
+    :Release unexpired inventory reservation;
+    :Release coupon reservation if policy permits;
+    if (Prepaid amount was captured?) then (yes)
+      :Create idempotent refund request;
+      :Set payment REFUND_PENDING;
+      :Reconcile refund asynchronously;
+    else (no)
+      :Keep payment uncollected or record void;
+    endif
+    :Write cancellation notification to outbox;
+    :Return accepted cancellation;
+  else (no)
+    :Return conflict with current order state;
+  endif
+else (no)
+  :Return not found;
+endif
+stop
+@enduml
+
+@startuml
+title 10. Checkout and Payment Sequence Diagram
+actor Customer
+participant "Web Client" as UI
+participant "REST API" as API
+participant "Checkout Module" as Checkout
+participant "Inventory Module" as Inventory
+participant "Order Module" as Order
+participant "Payment Orchestrator" as Payment
+participant "Payment Gateway Adapter" as Adapter
+participant "Payment Gateway" as Gateway
+database "PostgreSQL" as DB
+Customer -> UI : Submit checkout + idempotency key
+UI -> API : POST /checkout
+API -> Checkout : validate and execute
+Checkout -> DB : begin transaction; lock cart/inventory
+Checkout -> Inventory : reserve quantities
+Inventory --> Checkout : reserved / unavailable
+alt inventory unavailable
+  Checkout -> DB : rollback
+  Checkout --> API : availability conflict
+  API --> UI : 409 with unavailable items
+else reserved
+  Checkout -> Order : create order snapshots
+  Order -> DB : insert order, items, reservation,\nidempotency record and outbox
+  DB --> Order : committed
+  Order --> Checkout : pending order
+  alt prepaid
+    Checkout -> Payment : create payment attempt
+    Payment -> Adapter : initiate with stable idempotency key
+    Adapter -> Gateway : create payment
+    Gateway --> Adapter : pending + redirect/token
+    Adapter --> Payment : normalized result
+    Payment -> DB : persist attempt reference/status
+    Payment --> Checkout : payment action
+  else COD
+    Checkout -> DB : record COD method, not collected
+  end
+  Checkout --> API : order + payment state
+  API --> UI : checkout result
+end
+Gateway -> API : signed payment webhook (later)
+API -> Payment : verify signature and deduplicate event
+Payment -> DB : record event; update payment state
+Payment -> Order : request permitted order transition
+Order -> DB : update order + outbox atomically
+@enduml
+
+@startuml
+title 11. Shipping Integration Sequence Diagram
+actor Administrator as Admin
+participant "Admin Console" as UI
+participant "REST API" as API
+participant "Order Module" as Order
+participant "Outbox Worker" as Worker
+participant "Shipping Orchestrator" as Shipping
+participant "Shipping Provider Adapter" as Adapter
+participant "Shipping Provider" as Provider
+database "PostgreSQL" as DB
+Admin -> UI : Mark eligible order ready to ship
+UI -> API : fulfill order
+API -> Order : validate status / payment / inventory
+Order -> DB : update eligibility + insert outbox command
+DB --> Order : committed
+Worker -> DB : claim outbox command
+Worker -> Shipping : create shipment command
+Shipping -> Adapter : create with stable idempotency key
+Adapter -> Provider : create shipment (timeout bounded)
+alt provider accepts
+  Provider --> Adapter : carrier, tracking, estimate
+  Adapter --> Shipping : normalized success
+  Shipping -> DB : persist shipment and mark command complete
+  Shipping -> Order : record fulfillment progress
+else provider timeout or failure
+  Provider --> Adapter : timeout / retryable error
+  Adapter --> Shipping : normalized failure
+  Shipping -> DB : persist attempt and next retry time
+  note right of DB
+    Order remains eligible / processing.
+    Reconciliation retries safely.
+  end note
+end
+Provider -> API : signed shipment webhook
+API -> Shipping : verify, deduplicate and normalize event
+Shipping -> DB : append shipment event and update state
+@enduml
+
+@startuml
+title 12. Shipment Tracking Activity Diagram
+start
+:Receive provider webhook or polling result;
+:Validate provider signature / source;
+if (Authentic?) then (yes)
+  :Normalize provider event;
+  :Check provider event ID for duplicate;
+  if (Already processed?) then (yes)
+    :Acknowledge without repeating side effects;
+  else (no)
+    :Find shipment and validate transition;
+    if (Transition valid?) then (yes)
+      :Append immutable tracking event;
+      :Update shipment status and timestamp;
+      :Write customer notification to outbox;
+      :Commit event, state and inbox record;
+    else (no)
+      :Record rejected / out-of-order event for review;
+    endif
+  endif
+else (no)
+  :Reject and log security-relevant failure;
+endif
+stop
+@enduml
+
+@startuml
+title 13. Image Search Activity Diagram
+start
+:Customer uploads or captures cover image;
+:Validate authentication policy, file size,\nMIME type and decoded image content;
+if (Upload valid?) then (yes)
+  :Store in isolated temporary object prefix;
+  :Decode, normalize and enforce pixel/resource limits;
+  :Generate versioned image embedding;
+  :Search top-K vectors above configurable threshold;
+  :Fetch matching book metadata and availability;
+  :Rank by similarity and apply safe pagination;
+  if (Matches found?) then (yes)
+    :Return cover, title, price and availability;
+  else (no)
+    :Return empty result and search guidance;
+  endif
+  :Schedule temporary upload deletion;
+else (no)
+  :Return invalid upload error without indexing;
+endif
+stop
+@enduml
+
+@startuml
+title 14. Image Search Sequence Diagram
+actor Customer
+participant "Web Client" as UI
+participant "REST API" as API
+participant "Image Search Module" as Search
+participant "Upload Validator / Preprocessor" as Processor
+participant "Embedding Model Service" as Model
+database "pgvector Index" as Vector
+database "PostgreSQL Catalog" as DB
+collections "Temporary Object Storage" as Temp
+Customer -> UI : choose image
+UI -> API : POST /image-search (multipart)
+API -> Search : validate request and policy
+Search -> Processor : inspect type, size, content and dimensions
+alt invalid
+  Processor --> Search : validation error
+  Search --> API : 400 invalid image
+  API --> UI : validation message
+else valid
+  Processor -> Temp : store temporary object with expiry
+  Processor -> Processor : normalize and constrain decode
+  Processor -> Model : generate versioned embedding
+  Model --> Processor : embedding + model version
+  Processor --> Search : normalized embedding
+  Search -> Vector : top-K similarity search\n+ configured threshold + model version
+  Vector --> Search : ordered image references + scores
+  Search -> DB : fetch active books, images, prices, inventory
+  DB --> Search : book metadata
+  Search -> Search : rank and filter inactive/unavailable policy
+  Search --> API : results + scores + pagination
+  API --> UI : matching book cards
+end
+@enduml
+
+@startuml
+title 15. Order State Machine
+[*] --> PENDING_CONFIRMATION : checkout committed
+PENDING_CONFIRMATION --> CONFIRMED : prepaid payment succeeded\nor COD accepted
+PENDING_CONFIRMATION --> CANCELLED : customer/admin cancel\nor expiry policy
+CONFIRMED --> PROCESSING : fulfillment starts
+CONFIRMED --> CANCELLED : authorized cancellation\nbefore shipment handoff
+PROCESSING --> SHIPPED : at least one shipment picked up
+PROCESSING --> CANCELLED : authorized cancellation\nbefore carrier handoff
+SHIPPED --> DELIVERED : all shipments delivered
+SHIPPED --> RETURNED : return-to-sender completed
+DELIVERED --> RETURNED : approved return completed
+CANCELLED --> [*]
+RETURNED --> [*]
+DELIVERED --> [*]
+note right of PENDING_CONFIRMATION
+  Payment and shipment have separate
+  state machines. Order transition
+  guards enforce payment method rules.
+end note
+@enduml
+
+@startuml
+title 16. Payment State Machine
+[*] --> PENDING : online attempt created
+PENDING --> PROCESSING : gateway accepted request
+PENDING --> FAILED : validation / initiation failure
+PROCESSING --> SUCCEEDED : verified success event
+PROCESSING --> FAILED : verified failure / expiry
+PROCESSING --> PENDING : retryable gateway result
+SUCCEEDED --> REFUND_PENDING : authorized refund request
+REFUND_PENDING --> REFUNDED : verified refund completion
+REFUND_PENDING --> SUCCEEDED : refund failed / retry required
+FAILED --> PENDING : new distinct attempt
+note right of PENDING
+  Each attempt is retained. Repeated
+  callbacks are deduplicated. COD is a
+  payment method, not SUCCEEDED; collection
+  is recorded only when actually received.
+end note
+@enduml
+
+@startuml
+title 17. Shipment State Machine
+[*] --> PENDING : fulfillment requested
+PENDING --> READY_TO_SHIP : provider shipment created
+PENDING --> PENDING : retryable provider failure
+READY_TO_SHIP --> PICKED_UP : carrier pickup event
+READY_TO_SHIP --> CANCELLED : eligible cancellation
+PICKED_UP --> IN_TRANSIT : carrier scan
+IN_TRANSIT --> OUT_FOR_DELIVERY : carrier scan
+IN_TRANSIT --> DELIVERY_FAILED : delivery exception
+OUT_FOR_DELIVERY --> DELIVERED : carrier proof of delivery
+OUT_FOR_DELIVERY --> DELIVERY_FAILED : delivery attempt failed
+DELIVERY_FAILED --> IN_TRANSIT : rescheduled / retry delivery
+DELIVERY_FAILED --> RETURN_TO_SENDER : return initiated
+RETURN_TO_SENDER --> [*] : returned to origin
+DELIVERED --> [*]
+CANCELLED --> [*]
+note right of READY_TO_SHIP
+  Shipment status does not overwrite
+  payment status. Multiple shipments
+  may fulfill one order.
+end note
+@enduml

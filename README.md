@@ -195,6 +195,43 @@ Quan hệ dữ liệu chính:
 - Một order có nhiều order item.
 - Một book có thể nằm trong nhiều cart item/order item/wishlist.
 
+## Tìm sách bằng ảnh
+
+Nhấn biểu tượng máy ảnh trên thanh điều hướng hoặc **Search by image** ở trang Browse.
+Chọn ảnh JPEG/PNG/WebP tối đa 5 MB hoặc chụp ảnh trên điện thoại. Backend dùng
+Tesseract OCR để đọc chữ trên bìa, so ISBN, tên sách và tác giả với bảng `books`
+trong SQL Server, rồi chỉ trả về sách có trong catalog. Có thể sửa chữ nhận diện
+và tìm lại bằng tìm kiếm văn bản. API: `POST /api/books/search-by-image` với
+trường multipart `image`. Ảnh được xử lý trong bộ nhớ, không lưu trên server.
+Model tiếng Anh nằm trong `backend/ocr-data/eng.traineddata`, nên OCR tiếng Anh
+chạy được không cần tải model lúc khởi động. Có thể đổi `OCR_LANGS` trong
+`backend/.env` nếu đã cài dữ liệu ngôn ngữ khác. Ảnh bìa rõ
+chữ cho kết quả tốt hơn; tính năng này không so khớp hình ảnh thuần túy.
+
+## Trợ lý chọn sách và theo dõi giao hàng demo
+
+Nút **Book guide** mở chatbot gợi ý sách theo thể loại, chủ đề và ngân sách;
+nếu đã đăng nhập, sách trong mục gợi ý cá nhân hóa được ưu tiên. Chatbot chỉ
+giới thiệu sách thật đang có trong catalog. Đây là chế độ demo dựa trên quy tắc,
+chưa gọi mô hình AI bên ngoài.
+
+Trong **My Account → Orders**, chọn **Preview demo delivery map** hoặc
+**Track delivery** trên một đơn hàng. Bản đồ dùng OpenStreetMap/Leaflet; vị trí
+tài xế được mô phỏng và cập nhật mỗi 2 giây. Endpoint demo là
+`GET /api/orders/demo/tracking`; đơn hàng thật dùng
+`GET /api/orders/:orderId/tracking` và kiểm tra quyền chủ đơn/admin. Tuyến đường
+trình diễn là cố định ở TP. Hồ Chí Minh, không phải GPS hoặc địa chỉ người mua.
+Map tiles cần kết nối Internet.
+
+## Thiết kế mục tiêu mở rộng
+
+Bộ thiết kế kiến trúc và UML cho phiên bản mở rộng (thanh toán trực tuyến,
+vận chuyển qua nhà cung cấp ngoài và tìm kiếm sách bằng ảnh) nằm trong
+[docs/design/README.md](./docs/design/README.md). Các sơ đồ mô tả mục tiêu
+thiết kế, không đồng nghĩa mọi phần của chúng đều đã triển khai. Thư mục này gồm
+30 sơ đồ PlantUML riêng, hướng dẫn từng sơ đồ và mô hình UML XMI để import vào
+Visual Paradigm; XMI không đảm bảo giữ bố cục diagram hoặc tạo project `.vpp`.
+
 ## Luồng hoạt động chính
 
 Đăng ký và đăng nhập:
@@ -260,6 +297,7 @@ NODE_ENV=development
 DB_HOST=localhost
 DB_PORT=1433
 DB_NAME=book_store
+DB_AUTH=sql
 DB_USER=sa
 DB_PASSWORD=your_sqlserver_password
 DB_ENCRYPT=false
@@ -270,6 +308,17 @@ JWT_EXPIRE=7d
 
 FRONTEND_URL=http://localhost:5174
 ```
+
+Nếu chạy SQL Server cục bộ bằng **Windows Authentication**, dùng cấu hình sau trong `backend/.env` thay cho tài khoản `sa`:
+
+```env
+DB_AUTH=windows
+DB_HOST=localhost
+DB_NAME=book_store
+DB_ODBC_DRIVER=ODBC Driver 18 for SQL Server
+```
+
+Chế độ này sử dụng tài khoản Windows đang chạy backend và ODBC Driver 18. `DB_USER`, `DB_PASSWORD` và `DB_PORT` không được sử dụng; SQL Server không cần bật SQL Authentication hoặc TCP/IP. Tài khoản Windows đó cần quyền đọc/ghi database `book_store`.
 
 Frontend có thể dùng file `.env` hoặc `.env.local` ở thư mục gốc:
 

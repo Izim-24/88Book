@@ -1,0 +1,343 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmi:XMI xmi:version="2.5.1"
+  xmlns:xmi="http://www.omg.org/spec/XMI/20131001"
+  xmlns:uml="http://www.eclipse.org/uml2/5.0.0/UML">
+  <uml:Model xmi:id="model_online_bookstore" name="OnlineBookstore">
+    <packagedElement xmi:type="uml:Package" xmi:id="pkg_actors" name="Actors">
+      <packagedElement xmi:type="uml:Actor" xmi:id="actor_guest" name="Guest"/>
+      <packagedElement xmi:type="uml:Actor" xmi:id="actor_customer" name="Registered Customer"/>
+      <packagedElement xmi:type="uml:Actor" xmi:id="actor_admin" name="Administrator"/>
+      <packagedElement xmi:type="uml:Actor" xmi:id="actor_payment_gateway" name="Payment Gateway"/>
+      <packagedElement xmi:type="uml:Actor" xmi:id="actor_shipping_provider" name="Shipping Provider"/>
+      <packagedElement xmi:type="uml:Actor" xmi:id="actor_notification_provider" name="Notification Provider"/>
+    </packagedElement>
+
+    <packagedElement xmi:type="uml:Package" xmi:id="pkg_use_cases" name="Use Cases">
+      <packagedElement xmi:type="uml:UseCase" xmi:id="uc_browse" name="Browse catalog"/>
+      <packagedElement xmi:type="uml:UseCase" xmi:id="uc_keyword_search" name="Search and filter books"/>
+      <packagedElement xmi:type="uml:UseCase" xmi:id="uc_image_search" name="Search by cover image"/>
+      <packagedElement xmi:type="uml:UseCase" xmi:id="uc_auth" name="Register, authenticate and reset password"/>
+      <packagedElement xmi:type="uml:UseCase" xmi:id="uc_profile" name="Manage profile and addresses"/>
+      <packagedElement xmi:type="uml:UseCase" xmi:id="uc_shopping" name="Manage cart and wishlist"/>
+      <packagedElement xmi:type="uml:UseCase" xmi:id="uc_checkout" name="Checkout and create order"/>
+      <packagedElement xmi:type="uml:UseCase" xmi:id="uc_pay_online" name="Pay online"/>
+      <packagedElement xmi:type="uml:UseCase" xmi:id="uc_cod" name="Choose cash on delivery"/>
+      <packagedElement xmi:type="uml:UseCase" xmi:id="uc_order_history" name="View or cancel eligible order"/>
+      <packagedElement xmi:type="uml:UseCase" xmi:id="uc_track" name="Track shipment"/>
+      <packagedElement xmi:type="uml:UseCase" xmi:id="uc_review" name="Review delivered book"/>
+      <packagedElement xmi:type="uml:UseCase" xmi:id="uc_catalog_admin" name="Manage catalog, inventory and images"/>
+      <packagedElement xmi:type="uml:UseCase" xmi:id="uc_users_admin" name="Manage users, roles and promotions"/>
+      <packagedElement xmi:type="uml:UseCase" xmi:id="uc_fulfillment_admin" name="Manage orders, payments and shipments"/>
+      <packagedElement xmi:type="uml:UseCase" xmi:id="uc_reports" name="View sales reports"/>
+      <packagedElement xmi:type="uml:UseCase" xmi:id="uc_payment_webhook" name="Verify payment webhook"/>
+      <packagedElement xmi:type="uml:UseCase" xmi:id="uc_shipping_webhook" name="Process tracking webhook"/>
+      <packagedElement xmi:type="uml:UseCase" xmi:id="uc_embedding" name="Generate cover embedding"/>
+      <packagedElement xmi:type="uml:Association" xmi:id="as_guest_browse" memberEnd="end_guest_browse_a end_guest_browse_b">
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_guest_browse_a" type="actor_guest"/>
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_guest_browse_b" type="uc_browse"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="as_guest_keyword" memberEnd="end_guest_keyword_a end_guest_keyword_b">
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_guest_keyword_a" type="actor_guest"/>
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_guest_keyword_b" type="uc_keyword_search"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="as_guest_image" memberEnd="end_guest_image_a end_guest_image_b">
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_guest_image_a" type="actor_guest"/>
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_guest_image_b" type="uc_image_search"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="as_customer_checkout" memberEnd="end_customer_checkout_a end_customer_checkout_b">
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_customer_checkout_a" type="actor_customer"/>
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_customer_checkout_b" type="uc_checkout"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="as_customer_profile" memberEnd="end_customer_profile_a end_customer_profile_b">
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_customer_profile_a" type="actor_customer"/>
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_customer_profile_b" type="uc_profile"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="as_customer_shopping" memberEnd="end_customer_shopping_a end_customer_shopping_b">
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_customer_shopping_a" type="actor_customer"/>
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_customer_shopping_b" type="uc_shopping"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="as_customer_order_history" memberEnd="end_customer_order_a end_customer_order_b">
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_customer_order_a" type="actor_customer"/>
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_customer_order_b" type="uc_order_history"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="as_customer_track" memberEnd="end_customer_track_a end_customer_track_b">
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_customer_track_a" type="actor_customer"/>
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_customer_track_b" type="uc_track"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="as_admin_catalog" memberEnd="end_admin_catalog_a end_admin_catalog_b">
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_admin_catalog_a" type="actor_admin"/>
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_admin_catalog_b" type="uc_catalog_admin"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="as_admin_fulfillment" memberEnd="end_admin_fulfillment_a end_admin_fulfillment_b">
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_admin_fulfillment_a" type="actor_admin"/>
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_admin_fulfillment_b" type="uc_fulfillment_admin"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Include" xmi:id="inc_checkout_auth" name="authentication" addition="uc_auth" includingCase="uc_checkout"/>
+      <packagedElement xmi:type="uml:Extend" xmi:id="ext_checkout_pay" name="prepaid" extension="uc_pay_online" extendedCase="uc_checkout"/>
+      <packagedElement xmi:type="uml:Extend" xmi:id="ext_checkout_cod" name="COD" extension="uc_cod" extendedCase="uc_checkout"/>
+      <packagedElement xmi:type="uml:Include" xmi:id="inc_catalog_embedding" name="when cover changes" addition="uc_embedding" includingCase="uc_catalog_admin"/>
+    </packagedElement>
+
+    <packagedElement xmi:type="uml:Package" xmi:id="pkg_components" name="Modular Monolith Components">
+      <packagedElement xmi:type="uml:Component" xmi:id="cmp_api" name="REST API"/>
+      <packagedElement xmi:type="uml:Component" xmi:id="cmp_identity" name="Identity and Access"/>
+      <packagedElement xmi:type="uml:Component" xmi:id="cmp_catalog" name="Catalog and Keyword Search"/>
+      <packagedElement xmi:type="uml:Component" xmi:id="cmp_image_search" name="Image Search"/>
+      <packagedElement xmi:type="uml:Component" xmi:id="cmp_cart_checkout" name="Cart and Checkout"/>
+      <packagedElement xmi:type="uml:Component" xmi:id="cmp_orders" name="Order Management"/>
+      <packagedElement xmi:type="uml:Component" xmi:id="cmp_inventory" name="Inventory"/>
+      <packagedElement xmi:type="uml:Component" xmi:id="cmp_promotions" name="Promotions"/>
+      <packagedElement xmi:type="uml:Component" xmi:id="cmp_payment" name="Payment Orchestrator and Adapter"/>
+      <packagedElement xmi:type="uml:Component" xmi:id="cmp_shipping" name="Shipping Orchestrator and Adapter"/>
+      <packagedElement xmi:type="uml:Component" xmi:id="cmp_reviews_notifications" name="Reviews and Notifications"/>
+      <packagedElement xmi:type="uml:Component" xmi:id="cmp_workers" name="Outbox and Inbox Workers"/>
+      <packagedElement xmi:type="uml:Component" xmi:id="cmp_storage" name="PostgreSQL, pgvector and Object Storage"/>
+    </packagedElement>
+
+    <packagedElement xmi:type="uml:Package" xmi:id="pkg_domain" name="Domain Model">
+      <packagedElement xmi:type="uml:Class" xmi:id="cls_user" name="User">
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_user_id" name="id" type="type_uuid"/>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_user_email" name="email" type="type_string"/>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_user_password_hash" name="passwordHash" type="type_string" visibility="private"/>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_user_full_name" name="fullName" type="type_string"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Class" xmi:id="cls_role" name="Role">
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_role_id" name="id" type="type_uuid"/>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_role_name" name="name" type="type_string"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Class" xmi:id="cls_address" name="Address">
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_address_id" name="id" type="type_uuid"/>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_address_street" name="street" type="type_string"/>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_address_city" name="city" type="type_string"/>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_address_region" name="region" type="type_string"/>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_address_postal" name="postalCode" type="type_string"/>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_address_country" name="country" type="type_string"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Class" xmi:id="cls_book" name="Book">
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_book_id" name="id" type="type_uuid"/>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_book_isbn" name="isbn" type="type_string"/>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_book_title" name="title" type="type_string"/>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_book_price" name="price" type="type_decimal"/>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_book_active" name="active" type="type_boolean"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Class" xmi:id="cls_author" name="Author"/>
+      <packagedElement xmi:type="uml:Class" xmi:id="cls_category" name="Category"/>
+      <packagedElement xmi:type="uml:Class" xmi:id="cls_book_image" name="BookImage">
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_image_object_key" name="objectKey" type="type_string"/>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_image_primary" name="isPrimary" type="type_boolean"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Class" xmi:id="cls_image_embedding" name="ImageEmbedding">
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_embedding_model" name="modelVersion" type="type_string"/>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_embedding_vector_ref" name="vectorReference" type="type_string"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Class" xmi:id="cls_inventory" name="Inventory">
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_inventory_on_hand" name="onHand" type="type_integer"/>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_inventory_reserved" name="reserved" type="type_integer"/>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_inventory_version" name="version" type="type_integer"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Class" xmi:id="cls_cart" name="Cart"/>
+      <packagedElement xmi:type="uml:Class" xmi:id="cls_cart_item" name="CartItem">
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_cart_item_quantity" name="quantity" type="type_integer"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Class" xmi:id="cls_wishlist" name="Wishlist"/>
+      <packagedElement xmi:type="uml:Class" xmi:id="cls_coupon" name="Coupon">
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_coupon_code" name="code" type="type_string"/>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_coupon_value" name="discountValue" type="type_decimal"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Class" xmi:id="cls_coupon_redemption" name="CouponRedemption">
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_redemption_status" name="status" type="type_string"/>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_redemption_at" name="redeemedAt" type="type_datetime"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Class" xmi:id="cls_order" name="Order">
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_order_status" name="status" type="enum_order_status"/>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_order_subtotal" name="subtotal" type="type_decimal"/>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_order_discount" name="discount" type="type_decimal"/>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_order_shipping_fee" name="shippingFee" type="type_decimal"/>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_order_total" name="total" type="type_decimal"/>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_order_idempotency" name="idempotencyKey" type="type_string"/>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_order_address_snapshot" name="shippingAddressSnapshot" type="type_string"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Class" xmi:id="cls_order_item" name="OrderItem">
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_item_title_snapshot" name="titleSnapshot" type="type_string"/>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_item_unit_price" name="unitPriceSnapshot" type="type_decimal"/>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_item_quantity" name="quantity" type="type_integer"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Class" xmi:id="cls_inventory_reservation" name="InventoryReservation">
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_reservation_quantity" name="quantity" type="type_integer"/>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_reservation_expires" name="expiresAt" type="type_datetime"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Class" xmi:id="cls_payment_attempt" name="PaymentAttempt">
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_payment_method" name="method" type="type_string"/>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_payment_status" name="status" type="enum_payment_status"/>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_payment_amount" name="amount" type="type_decimal"/>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_payment_provider_ref" name="providerReference" type="type_string"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Class" xmi:id="cls_shipment" name="Shipment">
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_shipment_status" name="status" type="enum_shipment_status"/>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_shipment_tracking" name="trackingNumber" type="type_string"/>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_shipment_fee" name="shippingFee" type="type_decimal"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Class" xmi:id="cls_shipment_item" name="ShipmentItem">
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_shipment_item_quantity" name="quantity" type="type_integer"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Class" xmi:id="cls_shipment_event" name="ShipmentEvent">
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_shipment_event_id" name="providerEventId" type="type_string"/>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_shipment_event_time" name="occurredAt" type="type_datetime"/>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_shipment_event_status" name="status" type="type_string"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Class" xmi:id="cls_review" name="Review">
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_review_rating" name="rating" type="type_integer"/>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_review_body" name="body" type="type_string"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Class" xmi:id="cls_notification" name="Notification">
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_notification_channel" name="channel" type="type_string"/>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="attr_notification_status" name="status" type="type_string"/>
+      </packagedElement>
+
+      <packagedElement xmi:type="uml:Enumeration" xmi:id="enum_order_status" name="OrderStatus">
+        <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="order_pending" name="PENDING_CONFIRMATION"/>
+        <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="order_confirmed" name="CONFIRMED"/>
+        <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="order_processing" name="PROCESSING"/>
+        <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="order_shipped" name="SHIPPED"/>
+        <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="order_delivered" name="DELIVERED"/>
+        <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="order_cancelled" name="CANCELLED"/>
+        <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="order_returned" name="RETURNED"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Enumeration" xmi:id="enum_payment_status" name="PaymentStatus">
+        <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="payment_pending" name="PENDING"/>
+        <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="payment_processing" name="PROCESSING"/>
+        <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="payment_succeeded" name="SUCCEEDED"/>
+        <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="payment_failed" name="FAILED"/>
+        <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="payment_refund_pending" name="REFUND_PENDING"/>
+        <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="payment_refunded" name="REFUNDED"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Enumeration" xmi:id="enum_shipment_status" name="ShipmentStatus">
+        <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="shipment_pending" name="PENDING"/>
+        <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="shipment_ready" name="READY_TO_SHIP"/>
+        <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="shipment_picked_up" name="PICKED_UP"/>
+        <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="shipment_in_transit" name="IN_TRANSIT"/>
+        <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="shipment_out_delivery" name="OUT_FOR_DELIVERY"/>
+        <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="shipment_delivered" name="DELIVERED"/>
+        <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="shipment_failed" name="DELIVERY_FAILED"/>
+        <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="shipment_return" name="RETURN_TO_SENDER"/>
+        <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="shipment_cancelled" name="CANCELLED"/>
+      </packagedElement>
+
+      <packagedElement xmi:type="uml:PrimitiveType" xmi:id="type_uuid" name="UUID"/>
+      <packagedElement xmi:type="uml:PrimitiveType" xmi:id="type_string" name="String"/>
+      <packagedElement xmi:type="uml:PrimitiveType" xmi:id="type_decimal" name="Decimal"/>
+      <packagedElement xmi:type="uml:PrimitiveType" xmi:id="type_integer" name="Integer"/>
+      <packagedElement xmi:type="uml:PrimitiveType" xmi:id="type_boolean" name="Boolean"/>
+      <packagedElement xmi:type="uml:PrimitiveType" xmi:id="type_datetime" name="DateTime"/>
+
+      <packagedElement xmi:type="uml:Association" xmi:id="as_user_addresses" memberEnd="end_user_addresses_user end_user_addresses_address">
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_user_addresses_user" type="cls_user"><lowerValue xmi:type="uml:LiteralInteger" value="1"/><upperValue xmi:type="uml:LiteralInteger" value="1"/></ownedEnd>
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_user_addresses_address" type="cls_address"><lowerValue xmi:type="uml:LiteralInteger" value="0"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" value="*"/></ownedEnd>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="as_user_orders" memberEnd="end_user_orders_user end_user_orders_order">
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_user_orders_user" type="cls_user"><lowerValue xmi:type="uml:LiteralInteger" value="1"/><upperValue xmi:type="uml:LiteralInteger" value="1"/></ownedEnd>
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_user_orders_order" type="cls_order"><lowerValue xmi:type="uml:LiteralInteger" value="0"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" value="*"/></ownedEnd>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="as_order_items" memberEnd="end_order_items_order end_order_items_item">
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_order_items_order" type="cls_order" aggregation="composite"><lowerValue xmi:type="uml:LiteralInteger" value="1"/><upperValue xmi:type="uml:LiteralInteger" value="1"/></ownedEnd>
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_order_items_item" type="cls_order_item"><lowerValue xmi:type="uml:LiteralInteger" value="1"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" value="*"/></ownedEnd>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="as_book_order_items" memberEnd="end_book_order_items_book end_book_order_items_item">
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_book_order_items_book" type="cls_book"><lowerValue xmi:type="uml:LiteralInteger" value="1"/><upperValue xmi:type="uml:LiteralInteger" value="1"/></ownedEnd>
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_book_order_items_item" type="cls_order_item"><lowerValue xmi:type="uml:LiteralInteger" value="0"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" value="*"/></ownedEnd>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="as_book_authors" memberEnd="end_book_authors_book end_book_authors_author">
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_book_authors_book" type="cls_book"><lowerValue xmi:type="uml:LiteralInteger" value="0"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" value="*"/></ownedEnd>
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_book_authors_author" type="cls_author"><lowerValue xmi:type="uml:LiteralInteger" value="0"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" value="*"/></ownedEnd>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="as_book_categories" memberEnd="end_book_categories_book end_book_categories_category">
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_book_categories_book" type="cls_book"><lowerValue xmi:type="uml:LiteralInteger" value="0"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" value="*"/></ownedEnd>
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_book_categories_category" type="cls_category"><lowerValue xmi:type="uml:LiteralInteger" value="0"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" value="*"/></ownedEnd>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="as_book_images" memberEnd="end_book_images_book end_book_images_image">
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_book_images_book" type="cls_book" aggregation="composite"><lowerValue xmi:type="uml:LiteralInteger" value="1"/><upperValue xmi:type="uml:LiteralInteger" value="1"/></ownedEnd>
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_book_images_image" type="cls_book_image"><lowerValue xmi:type="uml:LiteralInteger" value="0"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" value="*"/></ownedEnd>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="as_image_embeddings" memberEnd="end_image_embeddings_image end_image_embeddings_embedding">
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_image_embeddings_image" type="cls_book_image"><lowerValue xmi:type="uml:LiteralInteger" value="1"/><upperValue xmi:type="uml:LiteralInteger" value="1"/></ownedEnd>
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_image_embeddings_embedding" type="cls_image_embedding"><lowerValue xmi:type="uml:LiteralInteger" value="0"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" value="*"/></ownedEnd>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="as_book_inventory" memberEnd="end_book_inventory_book end_book_inventory_inventory">
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_book_inventory_book" type="cls_book"><lowerValue xmi:type="uml:LiteralInteger" value="1"/><upperValue xmi:type="uml:LiteralInteger" value="1"/></ownedEnd>
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_book_inventory_inventory" type="cls_inventory"><lowerValue xmi:type="uml:LiteralInteger" value="0"/><upperValue xmi:type="uml:LiteralInteger" value="1"/></ownedEnd>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="as_user_cart" memberEnd="end_user_cart_user end_user_cart_cart">
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_user_cart_user" type="cls_user"><lowerValue xmi:type="uml:LiteralInteger" value="1"/><upperValue xmi:type="uml:LiteralInteger" value="1"/></ownedEnd>
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_user_cart_cart" type="cls_cart"><lowerValue xmi:type="uml:LiteralInteger" value="0"/><upperValue xmi:type="uml:LiteralInteger" value="1"/></ownedEnd>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="as_cart_items" memberEnd="end_cart_items_cart end_cart_items_item">
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_cart_items_cart" type="cls_cart" aggregation="composite"><lowerValue xmi:type="uml:LiteralInteger" value="1"/><upperValue xmi:type="uml:LiteralInteger" value="1"/></ownedEnd>
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_cart_items_item" type="cls_cart_item"><lowerValue xmi:type="uml:LiteralInteger" value="0"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" value="*"/></ownedEnd>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="as_cart_book" memberEnd="end_cart_book_cartitem end_cart_book_book">
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_cart_book_cartitem" type="cls_cart_item"><lowerValue xmi:type="uml:LiteralInteger" value="0"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" value="*"/></ownedEnd>
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_cart_book_book" type="cls_book"><lowerValue xmi:type="uml:LiteralInteger" value="1"/><upperValue xmi:type="uml:LiteralInteger" value="1"/></ownedEnd>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="as_user_wishlist" memberEnd="end_user_wishlist_user end_user_wishlist_wishlist">
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_user_wishlist_user" type="cls_user"><lowerValue xmi:type="uml:LiteralInteger" value="1"/><upperValue xmi:type="uml:LiteralInteger" value="1"/></ownedEnd>
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_user_wishlist_wishlist" type="cls_wishlist"><lowerValue xmi:type="uml:LiteralInteger" value="0"/><upperValue xmi:type="uml:LiteralInteger" value="1"/></ownedEnd>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="as_wishlist_book" memberEnd="end_wishlist_book_wishlist end_wishlist_book_book">
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_wishlist_book_wishlist" type="cls_wishlist"><lowerValue xmi:type="uml:LiteralInteger" value="0"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" value="*"/></ownedEnd>
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_wishlist_book_book" type="cls_book"><lowerValue xmi:type="uml:LiteralInteger" value="0"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" value="*"/></ownedEnd>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="as_order_reservations" memberEnd="end_order_reservations_order end_order_reservations_reservation">
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_order_reservations_order" type="cls_order"><lowerValue xmi:type="uml:LiteralInteger" value="1"/><upperValue xmi:type="uml:LiteralInteger" value="1"/></ownedEnd>
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_order_reservations_reservation" type="cls_inventory_reservation"><lowerValue xmi:type="uml:LiteralInteger" value="0"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" value="*"/></ownedEnd>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="as_order_payments" memberEnd="end_order_payments_order end_order_payments_payment">
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_order_payments_order" type="cls_order"><lowerValue xmi:type="uml:LiteralInteger" value="1"/><upperValue xmi:type="uml:LiteralInteger" value="1"/></ownedEnd>
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_order_payments_payment" type="cls_payment_attempt"><lowerValue xmi:type="uml:LiteralInteger" value="0"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" value="*"/></ownedEnd>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="as_order_shipments" memberEnd="end_order_shipments_order end_order_shipments_shipment">
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_order_shipments_order" type="cls_order"><lowerValue xmi:type="uml:LiteralInteger" value="1"/><upperValue xmi:type="uml:LiteralInteger" value="1"/></ownedEnd>
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_order_shipments_shipment" type="cls_shipment"><lowerValue xmi:type="uml:LiteralInteger" value="0"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" value="*"/></ownedEnd>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="as_shipment_items" memberEnd="end_shipment_items_shipment end_shipment_items_item">
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_shipment_items_shipment" type="cls_shipment" aggregation="composite"><lowerValue xmi:type="uml:LiteralInteger" value="1"/><upperValue xmi:type="uml:LiteralInteger" value="1"/></ownedEnd>
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_shipment_items_item" type="cls_shipment_item"><lowerValue xmi:type="uml:LiteralInteger" value="1"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" value="*"/></ownedEnd>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="as_shipment_item_order_item" memberEnd="end_shipment_item_items end_shipment_item_order_item">
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_shipment_item_items" type="cls_shipment_item"><lowerValue xmi:type="uml:LiteralInteger" value="0"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" value="*"/></ownedEnd>
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_shipment_item_order_item" type="cls_order_item"><lowerValue xmi:type="uml:LiteralInteger" value="1"/><upperValue xmi:type="uml:LiteralInteger" value="1"/></ownedEnd>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="as_shipment_events" memberEnd="end_shipment_events_shipment end_shipment_events_event">
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_shipment_events_shipment" type="cls_shipment" aggregation="composite"><lowerValue xmi:type="uml:LiteralInteger" value="1"/><upperValue xmi:type="uml:LiteralInteger" value="1"/></ownedEnd>
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_shipment_events_event" type="cls_shipment_event"><lowerValue xmi:type="uml:LiteralInteger" value="0"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" value="*"/></ownedEnd>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="as_user_reviews" memberEnd="end_user_reviews_user end_user_reviews_review">
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_user_reviews_user" type="cls_user"><lowerValue xmi:type="uml:LiteralInteger" value="1"/><upperValue xmi:type="uml:LiteralInteger" value="1"/></ownedEnd>
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_user_reviews_review" type="cls_review"><lowerValue xmi:type="uml:LiteralInteger" value="0"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" value="*"/></ownedEnd>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="as_book_reviews" memberEnd="end_book_reviews_book end_book_reviews_review">
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_book_reviews_book" type="cls_book"><lowerValue xmi:type="uml:LiteralInteger" value="1"/><upperValue xmi:type="uml:LiteralInteger" value="1"/></ownedEnd>
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_book_reviews_review" type="cls_review"><lowerValue xmi:type="uml:LiteralInteger" value="0"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" value="*"/></ownedEnd>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="as_user_notifications" memberEnd="end_user_notifications_user end_user_notifications_notification">
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_user_notifications_user" type="cls_user"><lowerValue xmi:type="uml:LiteralInteger" value="1"/><upperValue xmi:type="uml:LiteralInteger" value="1"/></ownedEnd>
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_user_notifications_notification" type="cls_notification"><lowerValue xmi:type="uml:LiteralInteger" value="0"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" value="*"/></ownedEnd>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="as_coupon_redemptions" memberEnd="end_coupon_redemptions_coupon end_coupon_redemptions_redemption">
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_coupon_redemptions_coupon" type="cls_coupon"><lowerValue xmi:type="uml:LiteralInteger" value="1"/><upperValue xmi:type="uml:LiteralInteger" value="1"/></ownedEnd>
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_coupon_redemptions_redemption" type="cls_coupon_redemption"><lowerValue xmi:type="uml:LiteralInteger" value="0"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" value="*"/></ownedEnd>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="as_user_redemptions" memberEnd="end_user_redemptions_user end_user_redemptions_redemption">
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_user_redemptions_user" type="cls_user"><lowerValue xmi:type="uml:LiteralInteger" value="1"/><upperValue xmi:type="uml:LiteralInteger" value="1"/></ownedEnd>
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_user_redemptions_redemption" type="cls_coupon_redemption"><lowerValue xmi:type="uml:LiteralInteger" value="0"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" value="*"/></ownedEnd>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="as_order_redemption" memberEnd="end_order_redemption_order end_order_redemption_redemption">
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_order_redemption_order" type="cls_order"><lowerValue xmi:type="uml:LiteralInteger" value="0"/><upperValue xmi:type="uml:LiteralInteger" value="1"/></ownedEnd>
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_order_redemption_redemption" type="cls_coupon_redemption"><lowerValue xmi:type="uml:LiteralInteger" value="0"/><upperValue xmi:type="uml:LiteralInteger" value="1"/></ownedEnd>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="as_user_role" memberEnd="end_user_role_user end_user_role_role">
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_user_role_user" type="cls_user"><lowerValue xmi:type="uml:LiteralInteger" value="0"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" value="*"/></ownedEnd>
+        <ownedEnd xmi:type="uml:Property" xmi:id="end_user_role_role" type="cls_role"><lowerValue xmi:type="uml:LiteralInteger" value="0"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" value="*"/></ownedEnd>
+      </packagedElement>
+    </packagedElement>
+  </uml:Model>
+</xmi:XMI>

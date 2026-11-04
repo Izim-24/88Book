@@ -1,0 +1,183 @@
+@startuml
+title 21. Keyword Search Architecture
+left to right direction
+actor Customer
+component "Web Client" as UI
+component "Catalog Search API" as API
+component "Query Validator\n(normalize, limits)" as Validator
+component "Search Service" as Search
+database "PostgreSQL Catalog" as DB
+database "Search History" as History
+component "Ranking / Pagination" as Rank
+Customer --> UI : keywords, filters, sort
+UI --> API : HTTPS query
+API --> Validator
+Validator --> Search
+Search --> DB : full-text / indexed filters\n(title, author, ISBN, category)
+Search --> History : optional authenticated history
+DB --> Rank : matching book IDs + fields
+Rank --> API : ranked page + facets/metadata
+API --> UI : book cards
+note bottom of Search
+  Filter and sort values are allow-listed.
+  Query complexity and page size are bounded.
+end note
+@enduml
+
+@startuml
+title 22. Image Search Architecture
+left to right direction
+actor Customer
+component "Web Client" as UI
+component "REST API" as API
+component "Upload Policy / Validator" as Validate
+component "Image Preprocessor" as Preprocess
+component "Embedding Service\n(model/version)" as Embed
+database "pgvector index" as Vector
+database "PostgreSQL catalog" as DB
+cloud "Private temporary object storage" as Temp
+Customer --> UI : upload / capture cover
+UI --> API : bounded multipart request
+API --> Validate : auth, MIME, bytes, dimensions
+Validate --> Temp : short-lived object
+Validate --> Preprocess : decode safely
+Preprocess --> Embed : normalized image
+Embed --> Vector : query embedding + version
+Vector --> DB : stable book_image_id + score
+DB --> API : active book/image/price/stock metadata
+API --> UI : top-K above configured threshold
+note bottom of Vector
+  Similarity threshold is configurable.
+  Model/version filters prevent comparisons
+  between incompatible vector spaces.
+end note
+@enduml
+
+@startuml
+title 23. Image Embedding Indexing Pipeline
+|Administrator|
+start
+:Create or update book cover;
+|Catalog Service|
+:Validate catalog image;
+:Write image metadata and pending index job;
+:Store original/derivative in object storage;
+|Outbox Worker|
+:Claim idempotent indexing job;
+|Embedding Service|
+:Preprocess image with resource limits;
+:Generate embedding and model version;
+|Indexing Service|
+:Upsert vector by image ID + model version;
+:Mark image version indexed;
+if (All required images indexed?) then (yes)
+  :Publish catalog image as searchable;
+else (no)
+  :Keep pending state and retry / alert;
+endif
+stop
+@enduml
+
+@startuml
+title 24. Shipping Provider Integration
+left to right direction
+actor Customer
+actor Administrator as Admin
+component "Checkout / Fulfillment" as App
+component "Shipping Orchestrator" as Orchestrator
+interface "ShippingProviderPort" as Port
+component "Provider Adapter" as Adapter
+cloud "Shipping Provider API" as Provider
+database "Orders / Shipments" as DB
+queue "Outbox + Retry Worker" as Queue
+Customer --> App : address and delivery choice
+App --> Orchestrator : quote request
+Orchestrator --> Port : quote
+Adapter - Port
+Adapter --> Provider : rates/services (timeout)
+Provider --> Adapter : service, price, estimate
+Adapter --> Orchestrator : normalized quote
+Orchestrator --> App : selectable service
+Admin --> App : fulfill eligible order
+App --> DB : state + outbox command in one transaction
+DB --> Queue : durable shipment command
+Queue --> Orchestrator : create / retry shipment
+Orchestrator --> Port : create shipment (idempotency key)
+Adapter --> Provider : create shipment
+Provider --> Adapter : tracking / result
+Adapter --> Orchestrator : normalized result
+Orchestrator --> DB : shipment and attempt state
+Provider --> App : signed tracking webhook
+App --> Orchestrator : verify / deduplicate / normalize
+Orchestrator --> DB : append shipment event
+note bottom of Queue
+  Provider calls are outside the DB transaction.
+  Failed creation remains recoverable through
+  retries and reconciliation; no false shipment is shown.
+end note
+@enduml
+
+@startuml
+title 25. Payment Gateway Integration
+left to right direction
+actor Customer
+component "Web Client" as UI
+component "Checkout / Order Module" as Order
+component "Payment Orchestrator" as Orchestrator
+interface "PaymentGatewayPort" as Port
+component "Gateway Adapter" as Adapter
+cloud "Payment Gateway" as Gateway
+database "Orders / Payment Attempts" as DB
+queue "Webhook Inbox / Outbox" as Queue
+Customer --> UI : choose prepaid method
+UI --> Order : checkout (idempotency key)
+Order --> DB : persist order and payment attempt
+Order --> Orchestrator : initiate payment
+Orchestrator --> Port : create intent
+Adapter - Port
+Adapter --> Gateway : request with idempotency key
+Gateway --> Adapter : redirect / token / pending result
+Adapter --> Orchestrator : normalized result
+Orchestrator --> DB : persist provider reference / state
+Gateway --> Queue : signed callback / webhook
+Queue --> Orchestrator : verify and deduplicate
+Orchestrator --> DB : update payment attempt
+Orchestrator --> Order : guarded order transition
+Order --> DB : order + outbox atomically
+note bottom of DB
+  Never store card credentials or provider secrets.
+  COD remains uncollected until collection is confirmed.
+end note
+@enduml
+
+@startuml
+title 26. Webhook Processing and Retry Flow
+start
+:Receive provider webhook;
+:Apply request size and rate limits;
+:Verify provider signature and timestamp;
+if (Signature valid?) then (yes)
+  :Validate provider event schema;
+  :Insert (provider, event ID) into inbox\nwith unique constraint;
+  if (Duplicate event?) then (yes)
+    :Acknowledge already-recorded event;
+  else (no)
+    :Commit inbox record and enqueue processing;
+    :Process event idempotently;
+    if (Transient processing error?) then (yes)
+      :Retry with bounded exponential backoff;
+      if (Retry budget exhausted?) then (yes)
+        :Dead-letter and alert for reconciliation;
+      else (no)
+        :Return event to retry queue;
+      endif
+    else (no)
+      :Commit domain update + outbox notification;
+      :Acknowledge success;
+    endif
+  endif
+else (no)
+  :Reject, log safe metadata and alert on abuse;
+endif
+stop
+@enduml

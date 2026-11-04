@@ -1,6 +1,7 @@
 import express from "express";
 import { authenticateToken } from "../middleware/auth.js";
 import { authorizeRole } from "../middleware/auth.js";
+import { getDemoTracking, getOrderTracking } from "../controllers/trackingController.js";
 import {
   createOrder,
   getUserOrders,
@@ -22,8 +23,10 @@ router.get(
 );
 
 // User routes
+router.get("/demo/tracking", authenticateToken, getDemoTracking);
 router.post("/", authenticateToken, createOrder);
 router.get("/", authenticateToken, getUserOrders);
+router.get("/:orderId/tracking", authenticateToken, getOrderTracking);
 router.get("/:orderId", authenticateToken, getOrderDetails);
 router.put("/:orderId/cancel", authenticateToken, cancelOrder);
 router.put(

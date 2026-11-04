@@ -10,7 +10,7 @@ class APIClient {
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
     const headers = {
-      "Content-Type": "application/json",
+      ...(options.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
       ...options.headers,
     };
 
@@ -67,6 +67,10 @@ class APIClient {
     });
   }
 
+  postForm(endpoint, formData) {
+    return this.request(endpoint, { method: "POST", body: formData });
+  }
+
   put(endpoint, body) {
     return this.request(endpoint, {
       method: "PUT",
@@ -116,6 +120,11 @@ export const booksAPI = {
   },
   getById: (id) => apiClient.get(`/books/${id}`),
   getRecommendations: () => apiClient.get("/books/recommendations"),
+  searchByImage: (image) => {
+    const formData = new FormData();
+    formData.append("image", image);
+    return apiClient.postForm("/books/search-by-image", formData);
+  },
   create: (book) => apiClient.post("/books", book),
   update: (id, book) => apiClient.put(`/books/${id}`, book),
   delete: (id) => apiClient.delete(`/books/${id}`),
@@ -146,6 +155,7 @@ export const ordersAPI = {
     apiClient.post("/orders", { shippingAddress, paymentMethod }),
   getAll: () => apiClient.get("/orders"),
   getById: (orderId) => apiClient.get(`/orders/${orderId}`),
+  getTracking: (orderId) => apiClient.get(orderId === "demo" ? "/orders/demo/tracking" : `/orders/${orderId}/tracking`),
   cancel: (orderId) => apiClient.put(`/orders/${orderId}/cancel`, {}),
   // Admin endpoints
   getAdminAccepted: () => apiClient.get("/orders/admin/accepted"),

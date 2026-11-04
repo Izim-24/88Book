@@ -1,0 +1,191 @@
+@startuml
+title 1. System Context
+left to right direction
+actor Guest
+actor Customer
+actor Administrator as Admin
+rectangle "Online Bookstore System" as System {
+  usecase "Browse and search catalog" as UC_Browse
+  usecase "Manage account and wishlist" as UC_Account
+  usecase "Place and track orders" as UC_Order
+  usecase "Manage catalog and fulfillment" as UC_Admin
+  usecase "Search by cover image" as UC_Image
+}
+cloud "Payment Gateway" as Payment
+cloud "Shipping Provider" as Shipping
+cloud "Email / Notification Provider" as Notify
+Guest --> UC_Browse
+Guest --> UC_Image
+Customer --> UC_Browse
+Customer --> UC_Account
+Customer --> UC_Order
+Customer --> UC_Image
+Admin --> UC_Admin
+System --> Payment : initiate / verify / refund
+System --> Shipping : quote / create / track
+System --> Notify : send notifications
+note bottom of System
+  Internal responsibilities end at the system boundary.
+  Provider APIs and data remain externally owned.
+end note
+@enduml
+
+@startuml
+title 2. High-Level System Architecture
+left to right direction
+actor Customer
+actor Administrator as Admin
+rectangle "Web Client" {
+  component "Customer Website" as CustomerUI
+  component "Admin Console" as AdminUI
+}
+rectangle "Modular Monolith REST API" {
+  component "API / Auth" as API
+  component "Catalog & Search" as Catalog
+  component "Cart & Checkout" as Checkout
+  component "Order Management" as Orders
+  component "Payment Module" as Pay
+  component "Shipping Module" as Ship
+  component "Image Search Module" as ImgSearch
+  component "Inventory, Promotions,\nReviews & Notifications" as Shared
+  component "Workers / Outbox-Inbox" as Workers
+}
+database "PostgreSQL\n(transactional data)" as DB
+database "pgvector\n(image embeddings)" as Vector
+cloud "S3-compatible\nobject storage" as ObjectStore
+cloud "Payment Gateway" as PaymentGateway
+cloud "Shipping Provider" as Carrier
+cloud "Notification Provider" as Email
+Customer --> CustomerUI
+Admin --> AdminUI
+CustomerUI --> API : HTTPS / REST
+AdminUI --> API : HTTPS / REST
+API --> Catalog
+API --> Checkout
+API --> Orders
+Catalog --> DB
+Catalog --> ImgSearch
+Checkout --> Orders
+Checkout --> Shared
+Orders --> DB
+Pay --> DB
+Ship --> DB
+ImgSearch --> Vector
+ImgSearch --> DB : matching book metadata
+ImgSearch --> ObjectStore : image references
+Workers --> Pay
+Workers --> Ship
+Workers --> Shared
+Pay --> PaymentGateway : adapter
+Ship --> Carrier : adapter
+Shared --> Email : adapter
+note bottom of Workers
+  Durable outbox/inbox, idempotent handlers,
+  bounded retries and reconciliation.
+end note
+@enduml
+
+@startuml
+title 3. UML Component Diagram
+left to right direction
+component "REST API" as API
+component "Identity & Access" as IAM
+component "Catalog" as Catalog
+component "Keyword Search" as Keyword
+component "Image Search" as Image
+component "Cart & Checkout" as Cart
+component "Order Management" as Order
+component "Inventory" as Inventory
+component "Promotion" as Promo
+component "Payment Orchestrator" as Payment
+interface "PaymentGatewayPort" as PaymentPort
+component "Payment Gateway Adapter" as PaymentAdapter
+component "Shipping Orchestrator" as Shipping
+interface "ShippingProviderPort" as ShippingPort
+component "Shipping Provider Adapter" as ShippingAdapter
+component "Review & Notification" as Notify
+component "Outbox / Inbox Workers" as Workers
+database "PostgreSQL" as DB
+database "pgvector" as Vector
+cloud "Object Storage" as Store
+cloud "Payment Gateway" as ExternalPay
+cloud "Shipping Provider" as ExternalShip
+cloud "Notification Provider" as ExternalNotify
+API --> IAM
+API --> Catalog
+Catalog --> Keyword
+Catalog --> Image
+API --> Cart
+Cart --> Order
+Cart --> Inventory
+Cart --> Promo
+Order --> Payment
+Order --> Shipping
+Payment ..> PaymentPort
+PaymentAdapter - PaymentPort
+PaymentAdapter --> ExternalPay
+Shipping ..> ShippingPort
+ShippingAdapter - ShippingPort
+ShippingAdapter --> ExternalShip
+Workers --> Payment
+Workers --> Shipping
+Workers --> Notify
+Notify --> ExternalNotify
+IAM --> DB
+Catalog --> DB
+Catalog --> Store
+Image --> Vector
+Image --> Store
+Cart --> DB
+Order --> DB
+Inventory --> DB
+Promo --> DB
+Payment --> DB
+Shipping --> DB
+Notify --> DB
+Workers --> DB
+@enduml
+
+@startuml
+title 4. Deployment Diagram
+node "Customer Device" as Client {
+  artifact "Browser\nReact application" as Web
+}
+node "Admin Device" as AdminClient {
+  artifact "Browser\nAdmin console" as AdminWeb
+}
+cloud "Public Network" as Network
+node "Application Environment" as AppEnv {
+  node "Reverse Proxy / TLS" as Proxy
+  node "Application Container" as App {
+    artifact "Modular Monolith REST API" as API
+    artifact "Background Worker" as Worker
+  }
+}
+node "Data Environment" as DataEnv {
+  database "PostgreSQL\n+ pgvector" as DB
+  folder "Object Storage Bucket\n(private originals / covers)" as Bucket
+}
+cloud "Payment Gateway" as Pay
+cloud "Shipping Provider" as Ship
+cloud "Email / Notification Provider" as Email
+Web --> Network
+AdminWeb --> Network
+Network --> Proxy : HTTPS
+Proxy --> API : internal TLS / HTTP
+Worker --> DB : private connection
+API --> DB : private connection
+API --> Bucket : signed service requests
+Worker --> Bucket
+API --> Pay : outbound HTTPS
+Worker --> Pay : outbound HTTPS / webhook processing
+Worker --> Ship : outbound HTTPS
+Ship --> Proxy : signed webhook / HTTPS
+Pay --> Proxy : signed webhook / HTTPS
+Worker --> Email : outbound HTTPS
+note right of Bucket
+  Temporary query uploads use a
+  separate private prefix and
+  lifecycle deletion policy.
+end note
+@enduml

@@ -15,6 +15,7 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Separator } from "./ui/separator";
 import { Book } from "./BookCard";
+import { DeliveryTrackingDialog } from "./DeliveryTrackingDialog";
 
 export interface UserProfile {
   name: string;
@@ -61,6 +62,7 @@ interface AccountPageProps {
   wishlist: Book[];
   isLoggedIn?: boolean;
   onLogout: () => void;
+  onChangePassword: (currentPassword: string, newPassword: string) => Promise<{ success: boolean; message?: string }>;
   onUpdateProfile: (profile: UserProfile) => void;
   onAddAddress: (address: Omit<Address, "id">) => void;
   onUpdateAddress: (address: Address) => void;
@@ -84,6 +86,7 @@ export function AccountPage({
   wishlist,
   isLoggedIn = false,
   onLogout,
+  onChangePassword,
   onUpdateProfile,
   onAddAddress,
   onUpdateAddress,
@@ -98,6 +101,21 @@ export function AccountPage({
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState("");
+  const [passwordForm, setPasswordForm] = useState({ current: "", next: "", confirm: "" });
+  const [passwordMessage, setPasswordMessage] = useState("");
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [trackingOrderId, setTrackingOrderId] = useState<string | null>(null);
+
+  const handlePasswordChange = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (passwordForm.next.length < 8) return setPasswordMessage("New password must be at least 8 characters.");
+    if (passwordForm.next !== passwordForm.confirm) return setPasswordMessage("New passwords do not match.");
+    setPasswordSaving(true);
+    const result = await onChangePassword(passwordForm.current, passwordForm.next);
+    setPasswordSaving(false);
+    setPasswordMessage(result.message || (result.success ? "Password changed." : "Could not change password."));
+    if (result.success) setPasswordForm({ current: "", next: "", confirm: "" });
+  };
   const [authForm, setAuthForm] = useState({
     email: "",
     password: "",
@@ -367,17 +385,13 @@ export function AccountPage({
   return (
     <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
+        <div className="mb-8">
           <div>
             <h1 className="mb-2">My Account</h1>
             <p className="text-muted-foreground">
               Manage your profile, orders, and preferences
             </p>
           </div>
-          <Button variant="outline" onClick={onLogout} className="gap-2">
-            <LogOut className="w-4 h-4" />
-            Sign Out
-          </Button>
         </div>
 
         <Tabs defaultValue="profile" className="space-y-6">
@@ -508,10 +522,11 @@ export function AccountPage({
                 </CardDescription>
               </CardHeader>
               <CardContent>
+                <Button variant="outline" size="sm" className="mb-4" onClick={() => setTrackingOrderId("demo")}>Preview demo delivery map</Button>
                 {orders.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">
-                    No orders yet. Start shopping to see your orders here!
-                  </p>
+                  <div className="text-center py-8 space-y-3">
+                    <p className="text-muted-foreground">No orders yet. Start shopping to see your orders here!</p>
+                  </div>
                 ) : (
                   <div className="space-y-4">
                     {orders.map((order) => (
@@ -551,6 +566,7 @@ export function AccountPage({
                           <span>Total</span>
                           <span>${order.total.toFixed(2)}</span>
                         </div>
+                        <Button variant="outline" size="sm" onClick={() => setTrackingOrderId(order.id.replace(/^ORD-/, ""))}>Track delivery</Button>
                       </div>
                     ))}
                   </div>
@@ -777,83 +793,33 @@ export function AccountPage({
           <TabsContent value="settings" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Account Settings</CardTitle>
-                <CardDescription>
-                  Manage your account preferences
-                </CardDescription>
+                <CardTitle>Session</CardTitle>
+                <CardDescription>Sign out of your account on this device.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="font-medium mb-2">Notifications</h3>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium">
-                            Email Notifications
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            Receive updates about your orders
-                          </p>
-                        </div>
-                        <input
-                          type="checkbox"
-                          defaultChecked
-                          className="w-4 h-4"
-                        />
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium">
-                            Marketing Emails
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            Get notified about new releases and deals
-                          </p>
-                        </div>
-                        <input
-                          type="checkbox"
-                          defaultChecked
-                          className="w-4 h-4"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  <Separator />
-                  <div>
-                    <h3 className="font-medium mb-2">Privacy</h3>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium">
-                            Share Reading History
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            Allow recommendations based on your purchases
-                          </p>
-                        </div>
-                        <input
-                          type="checkbox"
-                          defaultChecked
-                          className="w-4 h-4"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  <Separator />
-                  <div>
-                    <h3 className="font-medium mb-2 text-red-600">
-                      Danger Zone
-                    </h3>
-                    <Button variant="destructive" size="sm">
-                      Delete Account
-                    </Button>
-                  </div>
-                </div>
+              <CardContent>
+                <Button variant="outline" onClick={onLogout} className="gap-2">
+                  <LogOut className="w-4 h-4" /> Sign Out
+                </Button>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Change Password</CardTitle>
+                <CardDescription>Update the password used to sign in.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handlePasswordChange} className="space-y-4 max-w-md">
+                  <div><Label htmlFor="current-password">Current password</Label><Input id="current-password" type="password" autoComplete="current-password" required value={passwordForm.current} onChange={(event) => setPasswordForm({ ...passwordForm, current: event.target.value })} /></div>
+                  <div><Label htmlFor="new-password">New password</Label><Input id="new-password" type="password" autoComplete="new-password" required minLength={8} value={passwordForm.next} onChange={(event) => setPasswordForm({ ...passwordForm, next: event.target.value })} /></div>
+                  <div><Label htmlFor="confirm-password">Confirm new password</Label><Input id="confirm-password" type="password" autoComplete="new-password" required value={passwordForm.confirm} onChange={(event) => setPasswordForm({ ...passwordForm, confirm: event.target.value })} /></div>
+                  {passwordMessage && <p role="status" className="text-sm">{passwordMessage}</p>}
+                  <Button type="submit" disabled={passwordSaving}>{passwordSaving ? "Saving..." : "Change password"}</Button>
+                </form>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
+        <DeliveryTrackingDialog orderId={trackingOrderId} onClose={() => setTrackingOrderId(null)} />
       </div>
     </div>
   );

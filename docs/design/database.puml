@@ -1,0 +1,635 @@
+@startuml
+title 18. Entity Relationship Diagram
+hide circle
+skinparam linetype ortho
+entity "users" as users {
+  * id : bigint <<PK>>
+  --
+  email : citext <<UQ>>
+  password_hash : text
+}
+entity "roles" as roles {
+  * id : bigint <<PK>>
+  --
+  name : text <<UQ>>
+}
+entity "user_roles" as user_roles {
+  * user_id : bigint <<PK, FK>>
+  * role_id : bigint <<PK, FK>>
+}
+entity "addresses" as addresses {
+  * id : bigint <<PK>>
+  --
+  user_id : bigint <<FK>>
+  recipient / address fields
+}
+entity "books" as books {
+  * id : bigint <<PK>>
+  --
+  isbn : text <<UQ, nullable>>
+  title : text
+  price : numeric(12,2)
+}
+entity "authors" as authors {
+  * id : bigint <<PK>>
+  --
+  name : text
+}
+entity "book_authors" as book_authors {
+  * book_id : bigint <<PK, FK>>
+  * author_id : bigint <<PK, FK>>
+}
+entity "categories" as categories {
+  * id : bigint <<PK>>
+  --
+  name : text <<UQ>>
+}
+entity "book_categories" as book_categories {
+  * book_id : bigint <<PK, FK>>
+  * category_id : bigint <<PK, FK>>
+}
+entity "book_images" as book_images {
+  * id : bigint <<PK>>
+  --
+  book_id : bigint <<FK>>
+  object_key : text <<UQ>>
+}
+entity "inventory" as inventory {
+  * book_id : bigint <<PK, FK>>
+  --
+  on_hand : integer
+  reserved : integer
+  version : bigint
+}
+entity "carts" as carts {
+  * id : bigint <<PK>>
+  --
+  user_id : bigint <<FK, UQ>>
+}
+entity "cart_items" as cart_items {
+  * id : bigint <<PK>>
+  --
+  cart_id : bigint <<FK>>
+  book_id : bigint <<FK>>
+  quantity : integer
+}
+entity "wishlists" as wishlists {
+  * id : bigint <<PK>>
+  --
+  user_id : bigint <<FK, UQ>>
+}
+entity "wishlist_items" as wishlist_items {
+  * wishlist_id : bigint <<PK, FK>>
+  * book_id : bigint <<PK, FK>>
+}
+entity "coupons" as coupons {
+  * id : bigint <<PK>>
+  --
+  code : text <<UQ>>
+  validity and discount rules
+}
+entity "coupon_redemptions" as coupon_redemptions {
+  * id : bigint <<PK>>
+  --
+  coupon_id : bigint <<FK>>
+  user_id : bigint <<FK>>
+  order_id : bigint <<FK, nullable>>
+}
+entity "orders" as orders {
+  * id : bigint <<PK>>
+  --
+  user_id : bigint <<FK>>
+  status : order_status
+  address_snapshot : jsonb
+  idempotency_key : text
+}
+entity "order_items" as order_items {
+  * id : bigint <<PK>>
+  --
+  order_id : bigint <<FK>>
+  book_id : bigint <<FK>>
+  title_snapshot : text
+  unit_price : numeric(12,2)
+}
+entity "inventory_reservations" as reservations {
+  * id : bigint <<PK>>
+  --
+  order_id : bigint <<FK>>
+  book_id : bigint <<FK>>
+  quantity : integer
+  expires_at : timestamptz
+}
+entity "payment_attempts" as payments {
+  * id : bigint <<PK>>
+  --
+  order_id : bigint <<FK>>
+  status : payment_status
+  provider_reference : text
+}
+entity "shipments" as shipments {
+  * id : bigint <<PK>>
+  --
+  order_id : bigint <<FK>>
+  status : shipment_status
+  tracking_number : text
+}
+entity "shipment_items" as shipment_items {
+  * shipment_id : bigint <<PK, FK>>
+  * order_item_id : bigint <<PK, FK>>
+  quantity : integer
+}
+entity "shipment_events" as shipment_events {
+  * id : bigint <<PK>>
+  --
+  shipment_id : bigint <<FK>>
+  provider_event_id : text <<UQ>>
+}
+entity "reviews" as reviews {
+  * id : bigint <<PK>>
+  --
+  user_id : bigint <<FK>>
+  book_id : bigint <<FK>>
+  rating : smallint
+}
+entity "notifications" as notifications {
+  * id : bigint <<PK>>
+  --
+  user_id : bigint <<FK>>
+  status / channel / payload
+}
+entity "image_embeddings" as embeddings {
+  * book_image_id : bigint <<PK, FK>>
+  * model_version : text <<PK>>
+  embedding : vector
+}
+users ||--o{ user_roles
+roles ||--o{ user_roles
+users ||--o{ addresses
+users ||--o| carts
+carts ||--o{ cart_items
+books ||--o{ cart_items
+users ||--o| wishlists
+wishlists ||--o{ wishlist_items
+books ||--o{ wishlist_items
+books ||--o| inventory
+books ||--o{ book_images
+books ||--o{ book_authors
+authors ||--o{ book_authors
+books ||--o{ book_categories
+categories ||--o{ book_categories
+users ||--o{ orders
+orders ||--|{ order_items
+books ||--o{ order_items
+orders ||--o{ reservations
+books ||--o{ reservations
+orders ||--o{ payments
+orders ||--o{ shipments
+shipments ||--|{ shipment_items
+order_items ||--o{ shipment_items
+shipments ||--o{ shipment_events
+users ||--o{ reviews
+books ||--o{ reviews
+coupons ||--o{ coupon_redemptions
+users ||--o{ coupon_redemptions
+orders o|--o| coupon_redemptions
+users ||--o{ notifications
+book_images ||--o{ embeddings
+@enduml
+
+@startuml
+title 19. Logical Database Schema
+hide circle
+skinparam linetype ortho
+package "Identity" {
+  entity users {
+    * id : bigint <<PK>>
+    --
+    email : citext <<UNIQUE>>
+    password_hash : text
+    full_name : text
+    created_at / updated_at : timestamptz
+  }
+  entity roles {
+    * id : bigint <<PK>>
+    --
+    name : text <<UNIQUE>>
+  }
+  entity user_roles {
+    * user_id : bigint <<PK, FK>>
+    * role_id : bigint <<PK, FK>>
+    assigned_at : timestamptz
+  }
+  entity addresses {
+    * id : bigint <<PK>>
+    --
+    user_id : bigint <<FK>>
+    recipient, street, city, region
+    postal_code, country : text
+    is_default : boolean
+  }
+}
+package "Catalog and Search" {
+  entity books {
+    * id : bigint <<PK>>
+    --
+    isbn : text <<UNIQUE, nullable>>
+    title : text
+    description : text
+    price : numeric(12,2)
+    active : boolean
+  }
+  entity authors {
+    * id : bigint <<PK>>
+    --
+    name : text
+  }
+  entity book_authors {
+    * book_id : bigint <<PK, FK>>
+    * author_id : bigint <<PK, FK>>
+  }
+  entity categories {
+    * id : bigint <<PK>>
+    --
+    name : text <<UNIQUE>>
+  }
+  entity book_categories {
+    * book_id : bigint <<PK, FK>>
+    * category_id : bigint <<PK, FK>>
+  }
+  entity book_images {
+    * id : bigint <<PK>>
+    --
+    book_id : bigint <<FK>>
+    object_key : text <<UNIQUE>>
+    is_primary : boolean
+    created_at : timestamptz
+  }
+  entity image_embeddings {
+    * book_image_id : bigint <<PK, FK>>
+    * model_version : text <<PK>>
+    embedding : vector(N)
+    indexed_at : timestamptz
+  }
+  entity inventory {
+    * book_id : bigint <<PK, FK>>
+    --
+    on_hand : integer
+    reserved : integer
+    version : bigint
+  }
+}
+package "Shopping and Promotions" {
+  entity carts {
+    * id : bigint <<PK>>
+    --
+    user_id : bigint <<FK, UNIQUE>>
+    updated_at : timestamptz
+  }
+  entity cart_items {
+    * id : bigint <<PK>>
+    --
+    cart_id : bigint <<FK>>
+    book_id : bigint <<FK>>
+    quantity : integer
+    UNIQUE(cart_id, book_id)
+  }
+  entity wishlists {
+    * id : bigint <<PK>>
+    --
+    user_id : bigint <<FK, UNIQUE>>
+  }
+  entity wishlist_items {
+    * wishlist_id : bigint <<PK, FK>>
+    * book_id : bigint <<PK, FK>>
+    created_at : timestamptz
+  }
+  entity coupons {
+    * id : bigint <<PK>>
+    --
+    code : text <<UNIQUE>>
+    discount_type / value
+    starts_at / expires_at : timestamptz
+    usage_limit / per_user_limit : integer
+  }
+  entity coupon_redemptions {
+    * id : bigint <<PK>>
+    --
+    coupon_id : bigint <<FK>>
+    user_id : bigint <<FK>>
+    order_id : bigint <<FK, nullable>>
+    status : text
+    UNIQUE(coupon_id, order_id)
+  }
+}
+package "Orders and Fulfillment" {
+  entity orders {
+    * id : bigint <<PK>>
+    --
+    user_id : bigint <<FK>>
+    status : order_status
+    subtotal / discount / shipping_fee / total : numeric(12,2)
+    address_snapshot : jsonb
+    idempotency_key : text
+    UNIQUE(user_id, idempotency_key)
+    created_at / updated_at : timestamptz
+  }
+  entity order_items {
+    * id : bigint <<PK>>
+    --
+    order_id : bigint <<FK>>
+    book_id : bigint <<FK>>
+    title_snapshot : text
+    unit_price : numeric(12,2)
+    quantity : integer
+  }
+  entity inventory_reservations {
+    * id : bigint <<PK>>
+    --
+    order_id : bigint <<FK>>
+    book_id : bigint <<FK>>
+    quantity : integer
+    status : text
+    expires_at : timestamptz
+    UNIQUE(order_id, book_id)
+  }
+  entity payment_attempts {
+    * id : bigint <<PK>>
+    --
+    order_id : bigint <<FK>>
+    method / status : text
+    amount : numeric(12,2)
+    provider_reference : text <<nullable>>
+    idempotency_key : text <<UNIQUE>>
+    created_at / updated_at : timestamptz
+  }
+  entity shipments {
+    * id : bigint <<PK>>
+    --
+    order_id : bigint <<FK>>
+    provider / service_code : text
+    status : shipment_status
+    tracking_number : text <<nullable>>
+    shipping_fee : numeric(12,2)
+    estimated_delivery_at : timestamptz <<nullable>>
+  }
+  entity shipment_items {
+    * shipment_id : bigint <<PK, FK>>
+    * order_item_id : bigint <<PK, FK>>
+    quantity : integer
+  }
+  entity shipment_events {
+    * id : bigint <<PK>>
+    --
+    shipment_id : bigint <<FK>>
+    provider_event_id : text <<UNIQUE>>
+    status / description : text
+    occurred_at / received_at : timestamptz
+  }
+}
+package "Trust and Reliability" {
+  entity reviews {
+    * id : bigint <<PK>>
+    --
+    user_id : bigint <<FK>>
+    book_id : bigint <<FK>>
+    rating : smallint CHECK(1..5)
+    body : text
+    UNIQUE(user_id, book_id)
+  }
+  entity notifications {
+    * id : bigint <<PK>>
+    --
+    user_id : bigint <<FK>>
+    channel / status : text
+    payload : jsonb
+    created_at / sent_at : timestamptz
+  }
+  entity webhook_inbox {
+    * id : bigint <<PK>>
+    --
+    provider / provider_event_id : text
+    received_at / processed_at : timestamptz
+    UNIQUE(provider, provider_event_id)
+  }
+  entity outbox_events {
+    * id : uuid <<PK>>
+    --
+    aggregate_type / aggregate_id : text
+    event_type / payload : text / jsonb
+    available_at / processed_at : timestamptz
+    attempts : integer
+  }
+}
+users ||--o{ user_roles
+roles ||--o{ user_roles
+users ||--o{ addresses
+books ||--o{ book_authors
+authors ||--o{ book_authors
+books ||--o{ book_categories
+categories ||--o{ book_categories
+books ||--o{ book_images
+book_images ||--o{ image_embeddings
+books ||--o| inventory
+users ||--o| carts
+carts ||--o{ cart_items
+books ||--o{ cart_items
+users ||--o| wishlists
+wishlists ||--o{ wishlist_items
+books ||--o{ wishlist_items
+users ||--o{ orders
+orders ||--|{ order_items
+orders ||--o{ inventory_reservations
+orders ||--o{ payment_attempts
+orders ||--o{ shipments
+shipments ||--|{ shipment_items
+order_items ||--o{ shipment_items
+shipments ||--o{ shipment_events
+users ||--o{ reviews
+books ||--o{ reviews
+users ||--o{ coupon_redemptions
+coupons ||--o{ coupon_redemptions
+orders o|--o| coupon_redemptions
+users ||--o{ notifications
+@enduml
+
+@startuml
+title 20. UML Domain Class Diagram
+skinparam classAttributeIconSize 0
+class User {
+  +id: UUID
+  +email: String
+  -passwordHash: String
+  +status: UserStatus
+}
+class Role {
+  +id: UUID
+  +name: String
+}
+class Address {
+  +id: UUID
+  +recipient: String
+  +street: String
+  +city: String
+  +region: String
+  +postalCode: String
+  +country: String
+}
+class Book {
+  +id: UUID
+  +isbn: String
+  +title: String
+  +price: Money
+  +active: Boolean
+}
+class Author {
+  +id: UUID
+  +name: String
+}
+class Category {
+  +id: UUID
+  +name: String
+}
+class BookImage {
+  +id: UUID
+  +objectKey: String
+  +isPrimary: Boolean
+}
+class ImageEmbedding {
+  +modelVersion: String
+  +vectorReference: String
+  +indexedAt: Instant
+}
+class Inventory {
+  +onHand: Integer
+  +reserved: Integer
+  +version: Long
+  +available(): Integer
+}
+class Cart {
+  +id: UUID
+  +updatedAt: Instant
+}
+class CartItem { +quantity: Integer }
+class Wishlist {
+  +id: UUID
+}
+class Coupon {
+  +code: String
+  +discountType: DiscountType
+  +value: Decimal
+  +expiresAt: Instant
+}
+class CouponRedemption {
+  +status: RedemptionStatus
+  +redeemedAt: Instant
+}
+class Order {
+  +id: UUID
+  +status: OrderStatus
+  +subtotal: Money
+  +discount: Money
+  +shippingFee: Money
+  +total: Money
+  +idempotencyKey: String
+}
+class OrderItem {
+  +titleSnapshot: String
+  +unitPrice: Money
+  +quantity: Integer
+}
+class InventoryReservation {
+  +quantity: Integer
+  +expiresAt: Instant
+  +status: ReservationStatus
+}
+class PaymentAttempt {
+  +method: PaymentMethod
+  +status: PaymentStatus
+  +amount: Money
+  +providerReference: String
+}
+class Shipment {
+  +status: ShipmentStatus
+  +trackingNumber: String
+  +shippingFee: Money
+}
+class ShipmentItem {
+  +quantity: Integer
+}
+class ShipmentEvent {
+  +providerEventId: String
+  +occurredAt: Instant
+  +status: String
+}
+class Review {
+  +rating: Integer
+  +body: String
+}
+class Notification {
+  +channel: String
+  +status: String
+}
+enum OrderStatus {
+  PENDING_CONFIRMATION
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  RETURNED
+}
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  SUCCEEDED
+  FAILED
+  REFUND_PENDING
+  REFUNDED
+}
+enum ShipmentStatus {
+  PENDING
+  READY_TO_SHIP
+  PICKED_UP
+  IN_TRANSIT
+  OUT_FOR_DELIVERY
+  DELIVERED
+  DELIVERY_FAILED
+  RETURN_TO_SENDER
+  CANCELLED
+}
+User "1" -- "0..*" Address
+User "0..*" -- "0..*" Role : assigned roles
+User "1" -- "0..1" Cart
+Cart "1" *-- "0..*" CartItem
+CartItem "*" --> "1" Book
+User "1" -- "0..1" Wishlist
+Wishlist "1" *-- "0..*" Book : saved
+Book "0..*" -- "0..*" Author
+Book "0..*" -- "0..*" Category
+Book "1" *-- "0..*" BookImage
+BookImage "1" *-- "0..*" ImageEmbedding
+Book "1" -- "0..1" Inventory
+User "1" -- "0..*" Order
+Order "1" *-- "1..*" OrderItem
+OrderItem "*" --> "1" Book
+Order "1" *-- "0..*" InventoryReservation
+InventoryReservation "*" --> "1" Inventory
+Order "1" *-- "0..*" PaymentAttempt
+Order "1" *-- "0..*" Shipment
+Shipment "1" *-- "1..*" ShipmentEvent
+Shipment "1" *-- "1..*" ShipmentItem
+ShipmentItem "*" --> "1" OrderItem
+User "1" -- "0..*" Review
+Book "1" -- "0..*" Review
+Coupon "1" -- "0..*" CouponRedemption
+User "1" -- "0..*" CouponRedemption
+CouponRedemption "0..1" -- "0..1" Order
+User "1" -- "0..*" Notification
+Order --> OrderStatus
+PaymentAttempt --> PaymentStatus
+Shipment --> ShipmentStatus
+note bottom of OrderItem
+  Title, unit price and quantity are immutable
+  purchase-time snapshots, not live catalog values.
+end note
+@enduml

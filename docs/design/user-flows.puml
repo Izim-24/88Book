@@ -1,0 +1,110 @@
+@startuml
+title 27. Customer Website Sitemap
+[*] --> Home
+Home --> Catalog
+Home --> KeywordSearch
+Home --> ImageSearch
+Home --> BookDetails
+Catalog --> BookDetails
+KeywordSearch --> SearchResults
+ImageSearch --> ImageResults
+SearchResults --> BookDetails
+ImageResults --> BookDetails
+BookDetails --> Cart
+BookDetails --> Wishlist : authenticated
+Cart --> Checkout : authenticated
+Checkout --> OrderConfirmation
+OrderConfirmation --> OrderHistory
+OrderHistory --> OrderDetails
+OrderDetails --> ShipmentTracking
+OrderDetails --> Cancellation : if eligible
+Home --> Login
+Login --> Account
+Account --> Profile
+Account --> Addresses
+Account --> Wishlist
+Account --> OrderHistory
+Account --> Reviews
+@enduml
+
+@startuml
+title 28. Customer Checkout User Flow
+start
+:Review cart;
+:Sign in or register;
+:Choose or add shipping address;
+:Request shipping quote;
+if (Address and quote valid?) then (yes)
+  :Select shipping service;
+  :Apply optional coupon;
+  :Review calculated total;
+  if (Customer confirms?) then (yes)
+    :Submit checkout with idempotency key;
+    if (Inventory reserved and order created?) then (yes)
+      if (Payment method?) then (prepaid)
+        :Complete gateway payment;
+        :Show pending / confirmed result;
+      else (COD)
+        :Show order awaiting confirmation;\npayment remains uncollected;
+      endif
+      :Show order details and tracking when available;
+    else (no)
+      :Show stock / coupon / validation conflict;
+      :Return to cart for correction;
+    endif
+  else (no)
+    :Edit cart or leave checkout;
+  endif
+else (no)
+  :Correct address or choose another service;
+endif
+stop
+@enduml
+
+@startuml
+title 29. Search by Image User Flow
+start
+:Open image search;
+:Choose file or capture cover;
+:Preview and confirm upload;
+:Submit image;
+if (File type, size and image content valid?) then (yes)
+  :Wait for similar-cover search;
+  if (Matching books found?) then (yes)
+    :Browse ranked results with similarity context;
+    :Open book details;
+    :Add to cart or wishlist;
+  else (no)
+    :Show no-match guidance;\noffer keyword search;
+  endif
+else (no)
+  :Explain upload validation error;
+  :Choose another image;
+endif
+stop
+@enduml
+
+@startuml
+title 30. Admin Dashboard Sitemap
+[*] --> AdminLogin
+AdminLogin --> Dashboard
+Dashboard --> CatalogManagement
+CatalogManagement --> BookEditor
+BookEditor --> ImageManagement
+ImageManagement --> EmbeddingIndexStatus
+Dashboard --> InventoryManagement
+Dashboard --> OrderManagement
+OrderManagement --> OrderDetails
+OrderDetails --> PaymentAttempts
+OrderDetails --> ShipmentManagement
+ShipmentManagement --> TrackingHistory
+Dashboard --> UserAndRoleManagement
+Dashboard --> CouponManagement
+Dashboard --> ReviewModeration
+Dashboard --> SalesReports
+note right of EmbeddingIndexStatus
+  Reindex/retry actions are permissioned
+  and report failures; they do not silently
+  mark an image searchable.
+end note
+@enduml

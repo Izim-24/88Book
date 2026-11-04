@@ -6,6 +6,7 @@ import {
   Sparkles,
   TrendingUp,
   BookOpen,
+  Camera,
 } from "lucide-react";
 
 interface BrowsePageProps {
@@ -18,6 +19,7 @@ interface BrowsePageProps {
   onToggleWishlist?: (book: Book) => void;
   wishlist?: Book[];
   onSearchRecorded?: (query: string) => void;
+  onOpenImageSearch?: () => void;
 }
 
 const categories = [
@@ -52,6 +54,7 @@ export function BrowsePage({
   onToggleWishlist,
   wishlist,
   onSearchRecorded,
+  onOpenImageSearch,
 }: BrowsePageProps) {
   const [searchQuery, setSearchQuery] = useState(initialSearchQuery);
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
@@ -200,6 +203,8 @@ export function BrowsePage({
                 className="w-full pl-10 pr-4 py-3 bg-input-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
+
+            <button type="button" onClick={onOpenImageSearch} className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-border hover:bg-secondary" aria-label="Search by book cover"><Camera className="w-5 h-5" /> Search by image</button>
 
             {/* Sort */}
             <select

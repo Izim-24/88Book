@@ -14,6 +14,8 @@ import {
 import { AdminDashboard } from "./components/AdminDashboard";
 import { BookDetailsModal } from "./components/BookDetailsModal";
 import { AIRecommendations } from "./components/AIRecommendations";
+import { ImageSearchDialog } from "./components/ImageSearchDialog";
+import { BookGuideChat } from "./components/BookGuideChat";
 import {
   ArrowRight,
   Star,
@@ -55,6 +57,7 @@ function AppContent() {
   const [loading, setLoading] = useState(true);
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [imageSearchOpen, setImageSearchOpen] = useState(false);
   const [aiRecommendationLoading, setAIRecommendationLoading] = useState(false);
   const [aiSections, setAISections] = useState({
     forYou: [],
@@ -128,6 +131,22 @@ function AppContent() {
     return status;
   };
 
+  const refreshOrders = async () => {
+    const response = await ordersAPI.getAll();
+    if (!response.success) return;
+    setOrders(response.orders.map((order: any) => ({
+      id: `ORD-${order.id}`,
+      date: new Date(order.created_at).toLocaleDateString(),
+      total: Number(order.total_amount),
+      status: normalizeOrderStatus(order.status),
+      items: (order.items || []).map((item: any) => ({
+        bookTitle: item.bookTitle || `Book #${item.bookId}`,
+        quantity: item.quantity,
+        price: Number(item.price),
+      })),
+    })));
+  };
+
   const loadPersonalizedRecommendations = async () => {
     if (!isAuthenticated) {
       setAISections({ forYou: [], mightLike: [], alsoBought: [] });
@@ -199,6 +218,13 @@ function AppContent() {
   }, [isAuthenticated, user?.id]);
 
   useEffect(() => {
+    if (!isAuthenticated || currentPage !== "account") return;
+    refreshOrders();
+    const timer = window.setInterval(refreshOrders, 10000);
+    return () => window.clearInterval(timer);
+  }, [isAuthenticated, currentPage]);
+
+  useEffect(() => {
     let ignore = false;
 
     const loadAlsoBoughtBooks = async () => {
@@ -264,25 +290,7 @@ function AppContent() {
     if (isAuthenticated) {
       fetchCart();
 
-      ordersAPI.getAll().then((res) => {
-        if (res.success) {
-          setOrders(
-            res.orders.map((o: any) => ({
-              id: `ORD-${o.id}`,
-              date: new Date(o.created_at).toLocaleDateString(),
-              total: Number(o.total_amount),
-              status: normalizeOrderStatus(o.status),
-              items: o.items
-                ? o.items.map((i: any) => ({
-                    bookTitle: i.bookTitle || `Book #${i.bookId}`,
-                    quantity: i.quantity,
-                    price: Number(i.price),
-                  }))
-                : [],
-            })),
-          );
-        }
-      });
+      refreshOrders();
 
       addressesAPI.getAll().then((res) => {
         if (res.success) setAddresses(res.addresses);
@@ -359,12 +367,14 @@ function AppContent() {
 
   const handleOrderComplete = () => {
     resetCart();
+    refreshOrders();
     loadPersonalizedRecommendations();
     handleNavigate("home");
   };
 
   const handleOrderPlaced = () => {
     resetCart();
+    refreshOrders();
     loadPersonalizedRecommendations();
   };
 
@@ -517,8 +527,8 @@ function AppContent() {
         userRole={user?.role}
         canGoBack={pageHistory.length > 0}
         onGoBack={handleGoBack}
-        onLogout={handleLogout}
         onSearchSubmit={handleTopSearch}
+        onOpenImageSearch={() => setImageSearchOpen(true)}
         searchSuggestions={searchSuggestions}
       />
 
@@ -769,6 +779,7 @@ function AppContent() {
           onToggleWishlist={handleToggleWishlist}
           wishlist={wishlist}
           onSearchRecorded={recordSearchTerm}
+          onOpenImageSearch={() => setImageSearchOpen(true)}
         />
       )}
 
@@ -888,6 +899,7 @@ function AppContent() {
             handleToggleWishlist({ id: bookId } as any)
           }
           onLogout={handleLogout}
+          onChangePassword={usersAPI.changePassword}
           onLogin={login}
           onRegister={register}
         />
@@ -909,6 +921,24 @@ function AppContent() {
         onViewRelatedBook={(book) => {
           setSelectedBook(book);
         }}
+      />
+      <ImageSearchDialog
+        open={imageSearchOpen}
+        onClose={() => setImageSearchOpen(false)}
+        onSearchText={handleTopSearch}
+        onAddToCart={handleAddToCart}
+        onViewDetails={(book) => {
+          setSelectedBook(book);
+          setIsModalOpen(true);
+        }}
+        onToggleWishlist={handleToggleWishlist}
+        wishlist={wishlist}
+      />
+      <BookGuideChat
+        books={normalizeBooks(books)}
+        personalized={aiSections.forYou}
+        onViewDetails={(book) => { setSelectedBook(book); setIsModalOpen(true); }}
+        onAddToCart={handleAddToCart}
       />
     </div>
   );
