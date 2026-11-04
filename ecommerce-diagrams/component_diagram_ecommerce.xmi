@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmi:XMI xmi:version="2.1"
+    xmlns:xmi="http://schema.omg.org/spec/XMI/2.1"
+    xmlns:uml="http://www.eclipse.org/uml2/5.0.0/UML">
+
+    <uml:Model xmi:id="model_comp" name="E-commerce Component Diagram">
+        <packagedElement xmi:type="uml:Package" xmi:id="pkg_system" name="E-commerce System">
+
+            <packagedElement xmi:type="uml:Package" xmi:id="layer_presentation" name="Presentation Layer">
+
+                <packagedElement xmi:type="uml:Component" xmi:id="comp_searchui" name="SearchUI"/>
+                <packagedElement xmi:type="uml:Component" xmi:id="comp_textinput" name="TextInput"/>
+                <packagedElement xmi:type="uml:Component" xmi:id="comp_voiceinput" name="VoiceInput"/>
+                <packagedElement xmi:type="uml:Component" xmi:id="comp_imageupload" name="ImageUpload"/>
+                <packagedElement xmi:type="uml:Component" xmi:id="comp_searchresultview" name="SearchResultView"/>
+                <packagedElement xmi:type="uml:Component" xmi:id="comp_productdetailview" name="ProductDetailView"/>
+                <packagedElement xmi:type="uml:Component" xmi:id="comp_objectselectionview" name="ObjectSelectionView"/>
+
+                <packagedElement xmi:type="uml:Usage" xmi:id="use_textinput_searchui" client="comp_textinput" supplier="comp_searchui"/>
+                <packagedElement xmi:type="uml:Usage" xmi:id="use_voiceinput_searchui" client="comp_voiceinput" supplier="comp_searchui"/>
+                <packagedElement xmi:type="uml:Usage" xmi:id="use_imageupload_searchui" client="comp_imageupload" supplier="comp_searchui"/>
+                <packagedElement xmi:type="uml:Usage" xmi:id="use_searchui_searchresultview" client="comp_searchui" supplier="comp_searchresultview"/>
+                <packagedElement xmi:type="uml:Usage" xmi:id="use_searchui_productdetailview" client="comp_searchui" supplier="comp_productdetailview"/>
+                <packagedElement xmi:type="uml:Usage" xmi:id="use_searchui_objectselectionview" client="comp_searchui" supplier="comp_objectselectionview"/>
+            </packagedElement>
+
+            <packagedElement xmi:type="uml:Package" xmi:id="layer_application" name="Application / Intelligence Layer">
+
+                <packagedElement xmi:type="uml:Component" xmi:id="comp_searchapi" name="SearchAPI"/>
+                <packagedElement xmi:type="uml:Component" xmi:id="comp_speechsvc" name="SpeechService"/>
+                <packagedElement xmi:type="uml:Component" xmi:id="comp_textsvc" name="TextService"/>
+                <packagedElement xmi:type="uml:Component" xmi:id="comp_imagesvc" name="ImageService"/>
+                <packagedElement xmi:type="uml:Component" xmi:id="comp_embeddingsvc" name="EmbeddingService"/>
+                <packagedElement xmi:type="uml:Component" xmi:id="comp_querysvc" name="QueryService"/>
+                <packagedElement xmi:type="uml:Component" xmi:id="comp_searchsvc" name="SearchService"/>
+                <packagedElement xmi:type="uml:Component" xmi:id="comp_rankingsvc" name="RankingService"/>
+
+                <packagedElement xmi:type="uml:Usage" xmi:id="use_searchapi_speechsvc" client="comp_searchapi" supplier="comp_speechsvc"/>
+                <packagedElement xmi:type="uml:Usage" xmi:id="use_searchapi_textsvc" client="comp_searchapi" supplier="comp_textsvc"/>
+                <packagedElement xmi:type="uml:Usage" xmi:id="use_searchapi_imagesvc" client="comp_searchapi" supplier="comp_imagesvc"/>
+                <packagedElement xmi:type="uml:Usage" xmi:id="use_speechsvc_textsvc" client="comp_speechsvc" supplier="comp_textsvc"/>
+                <packagedElement xmi:type="uml:Usage" xmi:id="use_textsvc_embeddingsvc" client="comp_textsvc" supplier="comp_embeddingsvc"/>
+                <packagedElement xmi:type="uml:Usage" xmi:id="use_imagesvc_embeddingsvc" client="comp_imagesvc" supplier="comp_embeddingsvc"/>
+                <packagedElement xmi:type="uml:Usage" xmi:id="use_embeddingsvc_querysvc" client="comp_embeddingsvc" supplier="comp_querysvc"/>
+                <packagedElement xmi:type="uml:Usage" xmi:id="use_querysvc_searchsvc" client="comp_querysvc" supplier="comp_searchsvc"/>
+                <packagedElement xmi:type="uml:Usage" xmi:id="use_searchsvc_rankingsvc" client="comp_searchsvc" supplier="comp_rankingsvc"/>
+            </packagedElement>
+
+            <packagedElement xmi:type="uml:Package" xmi:id="layer_data" name="Data Layer">
+
+                <packagedElement xmi:type="uml:Component" xmi:id="comp_imagestorage" name="ImageStorage"/>
+                <packagedElement xmi:type="uml:Component" xmi:id="comp_vectorindex" name="VectorIndex"/>
+                <packagedElement xmi:type="uml:Component" xmi:id="comp_productrepo" name="ProductRepository"/>
+                <packagedElement xmi:type="uml:Component" xmi:id="comp_db" name="PostgreSQL + pgvector"/>
+
+                <packagedElement xmi:type="uml:Usage" xmi:id="use_vectorindex_db" client="comp_vectorindex" supplier="comp_db"/>
+                <packagedElement xmi:type="uml:Usage" xmi:id="use_productrepo_db" client="comp_productrepo" supplier="comp_db"/>
+            </packagedElement>
+
+            <packagedElement xmi:type="uml:Usage" xmi:id="use_searchui_searchapi" client="comp_searchui" supplier="comp_searchapi"/>
+            <packagedElement xmi:type="uml:Usage" xmi:id="use_imagesvc_imagestorage" client="comp_imagesvc" supplier="comp_imagestorage"/>
+            <packagedElement xmi:type="uml:Usage" xmi:id="use_searchsvc_vectorindex" client="comp_searchsvc" supplier="comp_vectorindex"/>
+            <packagedElement xmi:type="uml:Usage" xmi:id="use_searchsvc_productrepo" client="comp_searchsvc" supplier="comp_productrepo"/>
+
+        </packagedElement>
+    </uml:Model>
+</xmi:XMI>

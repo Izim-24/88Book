@@ -1,5 +1,6 @@
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { Heart } from "lucide-react";
+import { formatVND } from "../utils/format";
 
 export interface Book {
   id: string;
@@ -87,7 +88,7 @@ export function BookCard({
         </div>
         <div className="flex items-center justify-between gap-2">
           <span className="font-bold text-lg text-accent">
-            ${parseFloat(book.price as any).toFixed(2)}
+            {formatVND(book.price)}
           </span>
           <button
             onClick={handleAddToCart}

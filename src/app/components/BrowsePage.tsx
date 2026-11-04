@@ -7,6 +7,7 @@ import {
   TrendingUp,
   BookOpen,
   Camera,
+  Mic,
 } from "lucide-react";
 
 interface BrowsePageProps {
@@ -20,6 +21,7 @@ interface BrowsePageProps {
   wishlist?: Book[];
   onSearchRecorded?: (query: string) => void;
   onOpenImageSearch?: () => void;
+  onOpenVoiceSearch?: () => void;
 }
 
 const categories = [
@@ -55,6 +57,7 @@ export function BrowsePage({
   wishlist,
   onSearchRecorded,
   onOpenImageSearch,
+  onOpenVoiceSearch,
 }: BrowsePageProps) {
   const [searchQuery, setSearchQuery] = useState(initialSearchQuery);
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
@@ -204,6 +207,7 @@ export function BrowsePage({
               />
             </div>
 
+            <button type="button" onClick={onOpenVoiceSearch} className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-border hover:bg-secondary" aria-label="Search by voice"><Mic className="w-5 h-5" /> Search by voice</button>
             <button type="button" onClick={onOpenImageSearch} className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-border hover:bg-secondary" aria-label="Search by book cover"><Camera className="w-5 h-5" /> Search by image</button>
 
             {/* Sort */}

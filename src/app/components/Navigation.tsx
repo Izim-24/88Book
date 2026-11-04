@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from "react";
-import { ShoppingCart, BookOpen, Search, Camera, User, Package, ArrowLeft } from "lucide-react";
+import { ShoppingCart, BookOpen, Search, Camera, Mic, User, Package, ArrowLeft } from "lucide-react";
 
 interface NavigationProps {
   cartItemCount: number;
@@ -11,6 +11,7 @@ interface NavigationProps {
   onGoBack?: () => void;
   onSearchSubmit?: (query: string) => void;
   onOpenImageSearch?: () => void;
+  onOpenVoiceSearch?: () => void;
   searchSuggestions?: string[];
 }
 
@@ -24,6 +25,7 @@ export function Navigation({
   onGoBack,
   onSearchSubmit,
   onOpenImageSearch,
+  onOpenVoiceSearch,
   searchSuggestions = [],
 }: NavigationProps) {
   const [query, setQuery] = useState("");
@@ -130,6 +132,7 @@ export function Navigation({
             >
               <Search className="w-5 h-5" />
             </button>
+            <button type="button" onClick={onOpenVoiceSearch} className="p-2 hover:bg-accent rounded-lg transition-colors" aria-label="Search by voice" title="Search by voice"><Mic className="w-5 h-5" /></button>
             <button type="button" onClick={onOpenImageSearch} className="p-2 hover:bg-accent rounded-lg transition-colors" aria-label="Search by image" title="Search by image"><Camera className="w-5 h-5" /></button>
             {isLoggedIn && userRole === "admin" && (
               <button

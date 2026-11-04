@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { MessageCircle, Send, X } from "lucide-react";
 import type { Book } from "./BookCard";
+import { formatVND } from "../utils/format";
 
 interface Props {
   books: Book[];
@@ -78,13 +79,13 @@ export function BookGuideChat({ books, personalized, onViewDetails, onAddToCart 
           <p className={`rounded-xl px-3 py-2 text-sm ${message.role === "reader" ? "bg-primary text-primary-foreground" : "bg-secondary"}`}>{message.text}</p>
           {message.books?.map((book) => <div key={book.id} className="mt-2 flex gap-3 rounded-lg border border-border p-2">
             <img src={book.coverImage} alt="" className="h-16 w-12 object-cover rounded" />
-            <div className="min-w-0"><p className="text-sm font-semibold truncate">{book.title}</p><p className="text-xs text-muted-foreground">{book.author} · ${Number(book.price).toFixed(2)}</p>
+            <div className="min-w-0"><p className="text-sm font-semibold truncate">{book.title}</p><p className="text-xs text-muted-foreground">{book.author} · {formatVND(book.price)}</p>
               <div className="flex gap-3 mt-1 text-xs text-primary"><button type="button" onClick={() => onViewDetails(book)}>Details</button><button type="button" onClick={() => onAddToCart(book)}>Add to cart</button></div>
             </div>
           </div>)}
         </div>)}
       </div>
-      {messages.length === 1 && <div className="flex flex-wrap gap-1 px-4 pb-2">{["Trinh thám", "Lãng mạn", "Khoa học", "Sách dưới $15"].map((sample) => <button key={sample} type="button" onClick={() => send(sample)} className="text-xs rounded-full border border-border px-2 py-1 hover:bg-secondary">{sample}</button>)}</div>}
+      {messages.length === 1 && <div className="flex flex-wrap gap-1 px-4 pb-2">{["Trinh thám", "Lãng mạn", "Khoa học", "Sách dưới 100.000 ₫"].map((sample) => <button key={sample} type="button" onClick={() => send(sample)} className="text-xs rounded-full border border-border px-2 py-1 hover:bg-secondary">{sample}</button>)}</div>}
       <form onSubmit={(event) => { event.preventDefault(); send(input); }} className="flex gap-2 border-t border-border p-3">
         <input value={input} onChange={(event) => setInput(event.target.value)} aria-label="Describe your reading taste" placeholder="Thể loại, chủ đề, ngân sách..." className="flex-1 min-w-0 rounded-lg border border-border px-3 py-2 text-sm bg-background" />
         <button type="submit" disabled={!input.trim()} aria-label="Send message" className="rounded-lg bg-primary text-primary-foreground px-3 disabled:opacity-50"><Send className="w-4 h-4" /></button>

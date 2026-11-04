@@ -125,6 +125,8 @@ export const booksAPI = {
     formData.append("image", image);
     return apiClient.postForm("/books/search-by-image", formData);
   },
+  searchByVoice: (text, lang = "vi-VN") =>
+    apiClient.post("/books/search-by-voice", { text, lang }),
   create: (book) => apiClient.post("/books", book),
   update: (id, book) => apiClient.put(`/books/${id}`, book),
   delete: (id) => apiClient.delete(`/books/${id}`),

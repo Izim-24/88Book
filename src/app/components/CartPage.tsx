@@ -2,6 +2,7 @@
 import { Book } from "./BookCard";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { Minus, Plus, Trash2, ShoppingBag } from "lucide-react";
+import { formatVND } from "../utils/format";
 
 export interface CartItem extends Book {
   quantity: number;
@@ -25,7 +26,7 @@ export function CartPage({
     0,
   );
   const tax = subtotal * 0.08; // 8% tax
-  const shipping = cart.length > 0 ? 5.99 : 0;
+  const shipping = cart.length > 0 ? 30000 : 0;
   const total = subtotal + tax + shipping;
 
   if (cart.length === 0) {
@@ -74,7 +75,7 @@ export function CartPage({
                     {item.author}
                   </p>
                   <p className="font-semibold mb-4">
-                    ${parseFloat(item.price as any).toFixed(2)}
+                    {formatVND(item.price)}
                   </p>
 
                   <div className="flex items-center gap-3">
@@ -112,7 +113,7 @@ export function CartPage({
 
                 <div className="text-right">
                   <p className="font-semibold">
-                    ${(item.price * item.quantity).toFixed(2)}
+                    {formatVND(item.price * item.quantity)}
                   </p>
                 </div>
               </div>
@@ -127,20 +128,20 @@ export function CartPage({
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Subtotal</span>
-                  <span>${subtotal.toFixed(2)}</span>
+                  <span>{formatVND(subtotal)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Shipping</span>
-                  <span>${shipping.toFixed(2)}</span>
+                  <span>{formatVND(shipping)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Tax (8%)</span>
-                  <span>${tax.toFixed(2)}</span>
+                  <span>{formatVND(tax)}</span>
                 </div>
                 <div className="border-t border-border pt-3">
                   <div className="flex justify-between font-semibold text-lg">
                     <span>Total</span>
-                    <span>${total.toFixed(2)}</span>
+                    <span>{formatVND(total)}</span>
                   </div>
                 </div>
               </div>
@@ -153,7 +154,7 @@ export function CartPage({
               </button>
 
               <p className="text-xs text-muted-foreground mt-4 text-center">
-                Free shipping on orders over $50
+                Miễn phí vận chuyển cho đơn từ 1.000.000 ₫
               </p>
             </div>
           </div>
