@@ -171,6 +171,20 @@ const createTables = async () => {
     `);
 
     await pool.query(`
+      IF OBJECT_ID('voice_search_queries', 'U') IS NULL
+      BEGIN
+        CREATE TABLE voice_search_queries (
+          id INT IDENTITY(1,1) PRIMARY KEY,
+          user_id INT NULL,
+          recognized_text NVARCHAR(500) NOT NULL,
+          lang NVARCHAR(10) NOT NULL DEFAULT N'vi-VN',
+          created_at DATETIME DEFAULT GETDATE(),
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+        );
+      END
+    `);
+
+    await pool.query(`
       IF COL_LENGTH('books', 'admin_id') IS NULL
       BEGIN
         ALTER TABLE books ADD admin_id INT NULL;

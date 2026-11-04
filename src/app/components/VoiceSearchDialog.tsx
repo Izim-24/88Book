@@ -52,18 +52,7 @@ export function VoiceSearchDialog({ open, onClose, onSearchText, onAddToCart, on
       } else if (event.error === "no-speech") {
         setError("No speech detected. Please speak again.");
       } else if (event.error === "network") {
-        setError("Speech service connection failed. Trying English recognition as fallback...");
-        // Retry once with en-US — vi-VN service sometimes fails on some networks
-        setTimeout(() => {
-          try {
-            if (recognitionRef.current) {
-              recognitionRef.current.lang = "en-US";
-              recognitionRef.current.start();
-              setListening(true);
-            }
-          } catch { setError("Speech recognition is unavailable on this network. Please type your search instead."); }
-        }, 300);
-        return;
+        setError("Không kết nối được dịch vụ nhận diện giọng nói. Hãy thử lại hoặc nhập từ khóa bên trên.");
       } else if (event.error === "audio-capture") {
         setError("No microphone found. Please connect a microphone and try again.");
       } else if (event.error === "aborted") {
@@ -88,6 +77,13 @@ export function VoiceSearchDialog({ open, onClose, onSearchText, onAddToCart, on
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [open, onClose]);
 
+  useEffect(() => {
+    if (!open && recognitionRef.current) {
+      try { recognitionRef.current.stop(); } catch { /* already stopped */ }
+      setListening(false);
+    }
+  }, [open]);
+
   const toggleListening = () => {
     setError("");
     setSearched(false);
@@ -98,9 +94,6 @@ export function VoiceSearchDialog({ open, onClose, onSearchText, onAddToCart, on
       return;
     }
     setRecognizedText("");
-    try {
-      recognitionRef.current?.stop();
-    } catch { /* not started */ }
     try {
       recognitionRef.current?.start();
       setListening(true);

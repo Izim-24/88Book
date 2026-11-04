@@ -190,6 +190,19 @@ BEGIN
 END;
 GO
 
+IF OBJECT_ID(N'dbo.voice_search_queries', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.voice_search_queries (
+        id INT IDENTITY(1,1) PRIMARY KEY,
+        user_id INT NULL,
+        recognized_text NVARCHAR(500) NOT NULL,
+        lang NVARCHAR(10) NOT NULL DEFAULT N'vi-VN',
+        created_at DATETIME DEFAULT GETDATE(),
+        CONSTRAINT FK_voice_search_queries_user FOREIGN KEY (user_id) REFERENCES dbo.users(id) ON DELETE SET NULL
+    );
+END;
+GO
+
 IF OBJECT_ID(N'dbo.book_search_history', N'U') IS NOT NULL
    AND NOT EXISTS (
        SELECT 1
