@@ -15,6 +15,7 @@ import { AdminDashboard } from "./components/AdminDashboard";
 import { BookDetailsModal } from "./components/BookDetailsModal";
 import { AIRecommendations } from "./components/AIRecommendations";
 import { ImageSearchDialog } from "./components/ImageSearchDialog";
+import { VoiceSearchDialog } from "./components/VoiceSearchDialog";
 import { BookGuideChat } from "./components/BookGuideChat";
 import {
   ArrowRight,
@@ -58,6 +59,7 @@ function AppContent() {
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [imageSearchOpen, setImageSearchOpen] = useState(false);
+  const [voiceSearchOpen, setVoiceSearchOpen] = useState(false);
   const [aiRecommendationLoading, setAIRecommendationLoading] = useState(false);
   const [aiSections, setAISections] = useState({
     forYou: [],
@@ -529,6 +531,7 @@ function AppContent() {
         onGoBack={handleGoBack}
         onSearchSubmit={handleTopSearch}
         onOpenImageSearch={() => setImageSearchOpen(true)}
+        onOpenVoiceSearch={() => setVoiceSearchOpen(true)}
         searchSuggestions={searchSuggestions}
       />
 
@@ -780,6 +783,7 @@ function AppContent() {
           wishlist={wishlist}
           onSearchRecorded={recordSearchTerm}
           onOpenImageSearch={() => setImageSearchOpen(true)}
+          onOpenVoiceSearch={() => setVoiceSearchOpen(true)}
         />
       )}
 
@@ -925,6 +929,18 @@ function AppContent() {
       <ImageSearchDialog
         open={imageSearchOpen}
         onClose={() => setImageSearchOpen(false)}
+        onSearchText={handleTopSearch}
+        onAddToCart={handleAddToCart}
+        onViewDetails={(book) => {
+          setSelectedBook(book);
+          setIsModalOpen(true);
+        }}
+        onToggleWishlist={handleToggleWishlist}
+        wishlist={wishlist}
+      />
+      <VoiceSearchDialog
+        open={voiceSearchOpen}
+        onClose={() => setVoiceSearchOpen(false)}
         onSearchText={handleTopSearch}
         onAddToCart={handleAddToCart}
         onViewDetails={(book) => {

@@ -16,6 +16,7 @@ import { Badge } from "./ui/badge";
 import { Separator } from "./ui/separator";
 import { Book } from "./BookCard";
 import { DeliveryTrackingDialog } from "./DeliveryTrackingDialog";
+import { formatVND } from "../utils/format";
 
 export interface UserProfile {
   name: string;
@@ -556,7 +557,7 @@ export function AccountPage({
                                 {item.bookTitle} × {item.quantity}
                               </span>
                               <span>
-                                ${(item.price * item.quantity).toFixed(2)}
+                                {formatVND(item.price * item.quantity)}
                               </span>
                             </div>
                           ))}
@@ -564,7 +565,7 @@ export function AccountPage({
                         <Separator />
                         <div className="flex justify-between font-medium">
                           <span>Total</span>
-                          <span>${order.total.toFixed(2)}</span>
+                          <span>{formatVND(order.total)}</span>
                         </div>
                         <Button variant="outline" size="sm" onClick={() => setTrackingOrderId(order.id.replace(/^ORD-/, ""))}>Track delivery</Button>
                       </div>
@@ -770,7 +771,7 @@ export function AccountPage({
                             {book.author}
                           </p>
                           <p className="font-medium mt-1">
-                            ${parseFloat(book.price as any).toFixed(2)}
+                            {formatVND(book.price)}
                           </p>
                         </div>
                         <Button

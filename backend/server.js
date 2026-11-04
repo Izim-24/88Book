@@ -23,6 +23,9 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Serve static files (book cover images)
+app.use("/uploads", express.static(`${__dirname}/uploads`));
+
 // Health check route
 app.get("/api/health", (req, res) => {
   res.json({

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Eye, Trash2, Edit2, Plus, ShieldCheck, Users } from "lucide-react";
+import { formatVND } from "../utils/format";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -798,7 +799,7 @@ export function AdminDashboard({
                             <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-sm">
                               <span>Category: {book.category || "N/A"}</span>
                               <span>
-                                Price: ${parseFloat(book.price as any).toFixed(2)}
+                                Price: {formatVND(book.price)}
                               </span>
                               <span className="text-blue-600">
                                 Stock: {book.quantity}

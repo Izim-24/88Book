@@ -1,6 +1,7 @@
 import { X, ShoppingCart, Users } from "lucide-react";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { Book } from "./BookCard";
+import { formatVND } from "../utils/format";
 
 interface BookDetailsModalProps {
   book: Book | null;
@@ -96,7 +97,7 @@ export function BookDetailsModal({
                 <div className="mb-6">
                   <p className="text-sm text-muted-foreground">Price</p>
                   <p className="text-3xl font-bold text-primary">
-                    ${parseFloat(book.price as any).toFixed(2)}
+                    {formatVND(book.price)}
                   </p>
                 </div>
 

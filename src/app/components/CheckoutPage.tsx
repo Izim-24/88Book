@@ -1,6 +1,7 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Banknote, CheckCircle, CreditCard, Loader2 } from "lucide-react";
 import { ordersAPI } from "../../api/client";
+import { formatVND } from "../utils/format";
 
 interface CheckoutPageProps {
   items: Array<{
@@ -55,7 +56,7 @@ export function CheckoutPage({
     0,
   );
   const tax = subtotal * 0.08;
-  const shipping = items.length > 0 ? 5.99 : 0;
+  const shipping = items.length > 0 ? 30000 : 0;
   const calculatedTotal = subtotal + tax + shipping;
   const displayTotal = total > 0 && items.length > 0 ? calculatedTotal : 0;
 
@@ -138,13 +139,13 @@ export function CheckoutPage({
                     <span className="text-muted-foreground">
                       {item.title} x {item.quantity}
                     </span>
-                    <span>${(item.price * item.quantity).toFixed(2)}</span>
+                    <span>{formatVND(item.price * item.quantity)}</span>
                   </div>
                 ))}
                 <div className="border-t border-border pt-2 mt-2">
                   <div className="flex justify-between font-semibold">
                     <span>Total</span>
-                    <span>${confirmationTotal.toFixed(2)}</span>
+                    <span>{formatVND(confirmationTotal)}</span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
                     <span>Payment</span>
@@ -434,7 +435,7 @@ export function CheckoutPage({
                       </p>
                     </div>
                     <p className="text-sm">
-                      ${(item.price * item.quantity).toFixed(2)}
+                      {formatVND(item.price * item.quantity)}
                     </p>
                   </div>
                 ))}
@@ -443,21 +444,21 @@ export function CheckoutPage({
               <div className="space-y-2 mb-6 pb-6 border-b border-border">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Subtotal</span>
-                  <span>${subtotal.toFixed(2)}</span>
+                  <span>{formatVND(subtotal)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Shipping</span>
-                  <span>${shipping.toFixed(2)}</span>
+                  <span>{formatVND(shipping)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Tax</span>
-                  <span>${tax.toFixed(2)}</span>
+                  <span>{formatVND(tax)}</span>
                 </div>
               </div>
 
               <div className="flex justify-between font-semibold mb-6">
                 <span>Total</span>
-                <span className="text-lg">${displayTotal.toFixed(2)}</span>
+                <span className="text-lg">{formatVND(displayTotal)}</span>
               </div>
 
               <button
