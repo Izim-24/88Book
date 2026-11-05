@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Mic, MicOff, Search, X } from "lucide-react";
 import { booksAPI } from "../../api/client";
 import { BookCard, type Book } from "./BookCard";
+import { prepareSpeechRecognition } from "../utils/speechRecognition";
 
 interface VoiceSearchDialogProps {
   open: boolean;
@@ -17,8 +18,12 @@ type SpeechRecognitionType = typeof window extends { SpeechRecognition: infer T 
 
 export function VoiceSearchDialog({ open, onClose, onSearchText, onAddToCart, onViewDetails, onToggleWishlist, wishlist }: VoiceSearchDialogProps) {
   const recognitionRef = useRef<SpeechRecognitionType | null>(null);
+  const openRef = useRef(open);
+  openRef.current = open;
   const [supported, setSupported] = useState(true);
   const [listening, setListening] = useState(false);
+  const [preparing, setPreparing] = useState(false);
+  const [recognitionMode, setRecognitionMode] = useState<"local" | "remote" | null>(null);
   const [recognizedText, setRecognizedText] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -52,7 +57,9 @@ export function VoiceSearchDialog({ open, onClose, onSearchText, onAddToCart, on
       } else if (event.error === "no-speech") {
         setError("No speech detected. Please speak again.");
       } else if (event.error === "network") {
-        setError("Không kết nối được dịch vụ nhận diện giọng nói. Hãy thử lại hoặc nhập từ khóa bên trên.");
+        setError("Dịch vụ nhận diện giọng nói của trình duyệt không kết nối được. Hãy thử Chrome/Edge có hỗ trợ gói tiếng Việt trên thiết bị, hoặc nhập từ khóa bên trên.");
+      } else if (event.error === "language-not-supported") {
+        setError("Trình duyệt chưa có gói nhận diện tiếng Việt trên thiết bị. Hãy nhập từ khóa bên trên hoặc thử trình duyệt khác.");
       } else if (event.error === "audio-capture") {
         setError("No microphone found. Please connect a microphone and try again.");
       } else if (event.error === "aborted") {
@@ -84,7 +91,7 @@ export function VoiceSearchDialog({ open, onClose, onSearchText, onAddToCart, on
     }
   }, [open]);
 
-  const toggleListening = () => {
+  const toggleListening = async () => {
     setError("");
     setSearched(false);
     setResults([]);
@@ -94,11 +101,20 @@ export function VoiceSearchDialog({ open, onClose, onSearchText, onAddToCart, on
       return;
     }
     setRecognizedText("");
+    setPreparing(true);
     try {
-      recognitionRef.current?.start();
+      const Recognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      const recognition = recognitionRef.current;
+      if (!recognition || !Recognition) throw new Error("Speech recognition unavailable");
+      const mode = await prepareSpeechRecognition(Recognition, recognition, "vi-VN");
+      if (!openRef.current) return;
+      setRecognitionMode(mode);
+      recognition.start();
       setListening(true);
     } catch {
       setError("Could not start the microphone. Please try again.");
+    } finally {
+      setPreparing(false);
     }
   };
 
@@ -169,13 +185,14 @@ export function VoiceSearchDialog({ open, onClose, onSearchText, onAddToCart, on
             {supported && <button
               type="button"
               onClick={toggleListening}
+              disabled={preparing}
               aria-label={listening ? "Stop recording" : "Start recording"}
               className={`rounded-full p-6 transition-all ${listening ? "bg-red-500 text-white animate-pulse" : "bg-primary text-primary-foreground hover:opacity-90"}`}
             >
               {listening ? <MicOff className="w-8 h-8" /> : <Mic className="w-8 h-8" />}
             </button>}
             {supported && <p className="text-sm text-muted-foreground">
-              {listening ? "Đang nghe... Nói xong bấm lại để dừng" : "Bấm micro để bắt đầu nói"}
+              {preparing ? "Đang kiểm tra nhận diện tiếng Việt trên thiết bị..." : listening ? `Đang nghe${recognitionMode === "local" ? " trên thiết bị" : ""}... Nói xong bấm lại để dừng` : "Bấm micro để bắt đầu nói"}
             </p>}
           </div>
 
