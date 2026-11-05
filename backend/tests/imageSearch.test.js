@@ -22,3 +22,9 @@ test("ISBN takes priority even when OCR also reads other words", () => {
 test("unrelated image text does not invent a book", () => {
   assert.deepEqual(rankBooks(books, "A street and a bicycle"), []);
 });
+
+test("matches a full author name when OCR misses the title and one letter", () => {
+  const result = rankBooks(books, "JAMES CLER");
+  assert.equal(result[0].id, 1);
+  assert.equal(result[0].matchReason, "Author");
+});

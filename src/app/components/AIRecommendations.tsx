@@ -105,7 +105,7 @@ export function AIRecommendations({
   const hasRecommendations =
     sections.forYou.length ||
     sections.mightLike.length ||
-    sections.mightLike.length;
+    sections.alsoBought.length;
 
   return (
     <section className="section-block px-4 sm:px-6 lg:px-8">
@@ -179,6 +179,17 @@ export function AIRecommendations({
               books={sections.mightLike}
               icon={ArrowRight}
               badge="AI Match"
+              wishlist={wishlist}
+              onAddToCart={onAddToCart}
+              onViewDetails={onViewDetails}
+              onToggleWishlist={onToggleWishlist}
+            />
+            <RecommendationShelf
+              title="Người mua cũng chọn"
+              subtitle={anchorBook?.title ? `Sách thường được mua cùng ${anchorBook.title}.` : "Sách được mua cùng nhau."}
+              books={sections.alsoBought}
+              icon={ArrowRight}
+              badge="Also Bought"
               wishlist={wishlist}
               onAddToCart={onAddToCart}
               onViewDetails={onViewDetails}

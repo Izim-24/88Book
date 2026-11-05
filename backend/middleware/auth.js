@@ -35,6 +35,18 @@ export const authenticateToken = (req, res, next) => {
   });
 };
 
+export const identifyOptionalUser = (req, _res, next) => {
+  const token = req.headers.authorization?.match(/^Bearer\s+(.+)$/i)?.[1];
+  if (token && process.env.JWT_SECRET) {
+    try {
+      req.user = jwt.verify(token, process.env.JWT_SECRET);
+    } catch {
+      // Public searches still work when the saved token has expired.
+    }
+  }
+  next();
+};
+
 export const authorizeRole = (...roles) => {
   return (req, res, next) => {
     if (!req.user) {

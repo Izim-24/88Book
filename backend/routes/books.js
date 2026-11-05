@@ -1,6 +1,6 @@
 import express from "express";
 import multer from "multer";
-import { authenticateToken, authorizeRole } from "../middleware/auth.js";
+import { authenticateToken, authorizeRole, identifyOptionalUser } from "../middleware/auth.js";
 import { searchBooksByImage } from "../controllers/imageSearchController.js";
 import { searchBooksByVoice } from "../controllers/voiceSearchController.js";
 import {
@@ -35,7 +35,7 @@ router.post("/search-by-image", (req, res, next) => {
     next();
   });
 }, searchBooksByImage);
-router.post("/search-by-voice", searchBooksByVoice);
+router.post("/search-by-voice", identifyOptionalUser, searchBooksByVoice);
 router.get("/:id", getBookById);
 
 router.post("/", authenticateToken, authorizeRole("admin"), createBook);

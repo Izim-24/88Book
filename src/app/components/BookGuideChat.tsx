@@ -32,8 +32,9 @@ const normalize = (value: string) => value.normalize("NFD").replace(/[\u0300-\u0
 function recommend(text: string, books: Book[], personalized: Book[]) {
   const query = normalize(text);
   const categories = Object.entries(categoryWords).filter(([, words]) => words.some((word) => query.includes(word))).map(([category]) => category);
-  const budgetMatch = query.match(/(?:duoi|under|toi da|max|<|\$)\s*\$?\s*(\d+(?:[.,]\d{1,2})?)/);
-  const budget = budgetMatch ? Number(budgetMatch[1].replace(",", ".")) : null;
+  const budgetMatch = normalize(text).match(/(?:duoi|under|toi da|max|khong qua|<)\s*(\d[\d.,\s]*)(?:\s*(?:vnd|dong|₫|k|nghin|ngan))?/);
+  const budgetDigits = budgetMatch?.[1].replace(/[^\d]/g, "") || "";
+  const budget = budgetDigits ? Number(budgetDigits) * (/\d\s*(?:k|nghin|ngan)\b/.test(query) ? 1000 : 1) : null;
   const terms = query.split(" ").filter((word) => word.length > 2 && !["sach", "cuon", "muon", "thich", "cho", "toi", "hay", "book", "read", "the", "about"].includes(word));
   const preferredIds = new Set(personalized.map((book) => String(book.id)));
   const ranked = books.filter((book: any) => Number(book.quantity ?? 1) > 0)
@@ -45,11 +46,12 @@ function recommend(text: string, books: Book[], personalized: Book[]) {
       const score = termHits * 3 + (preferredIds.has(String(book.id)) ? 2 : 0) + Number(book.rating || 0) / 10;
       return { book, score };
     })
+    .filter(({ score }) => categories.length > 0 || budget != null || score > 0.5)
     .sort((a, b) => b.score - a.score)
     .slice(0, 3).map(({ book }) => book);
 
   if (!ranked.length) return { text: "Mình chưa thấy sách phù hợp trong catalog. Bạn thử đổi thể loại hoặc tăng ngân sách nhé.", books: [] };
-  const reason = categories.length ? `thể loại ${categories.join(", ")}` : budget != null ? `ngân sách dưới $${budget}` : "gu đọc bạn mô tả";
+  const reason = categories.length ? `thể loại ${categories.join(", ")}` : budget != null ? `ngân sách dưới ${formatVND(budget)}` : "gu đọc bạn mô tả";
   return { text: `Dựa trên ${reason}, bạn có thể xem các sách còn hàng này:`, books: ranked };
 }
 

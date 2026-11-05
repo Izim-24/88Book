@@ -139,8 +139,7 @@ export function VoiceSearchDialog({ open, onClose, onSearchText, onAddToCart, on
           </p>
         )}
 
-        {supported && (
-          <div className="flex flex-col items-center gap-4 rounded-xl border border-border p-6">
+        <div className="flex flex-col items-center gap-4 rounded-xl border border-border p-6">
             <div className="w-full">
               <label htmlFor="voice-fallback-text" className="block text-sm font-medium mb-1">Hoặc nhập tay để tìm nhanh</label>
               <div className="flex flex-col sm:flex-row gap-2">
@@ -162,24 +161,23 @@ export function VoiceSearchDialog({ open, onClose, onSearchText, onAddToCart, on
               </div>
             </div>
 
-            <div className="flex items-center gap-3 w-full">
+            {supported && <div className="flex items-center gap-3 w-full">
               <div className="flex-1 border-t border-border" />
               <span className="text-xs text-muted-foreground">hoặc dùng giọng nói</span>
               <div className="flex-1 border-t border-border" />
-            </div>
-            <button
+            </div>}
+            {supported && <button
               type="button"
               onClick={toggleListening}
               aria-label={listening ? "Stop recording" : "Start recording"}
               className={`rounded-full p-6 transition-all ${listening ? "bg-red-500 text-white animate-pulse" : "bg-primary text-primary-foreground hover:opacity-90"}`}
             >
               {listening ? <MicOff className="w-8 h-8" /> : <Mic className="w-8 h-8" />}
-            </button>
-            <p className="text-sm text-muted-foreground">
+            </button>}
+            {supported && <p className="text-sm text-muted-foreground">
               {listening ? "Đang nghe... Nói xong bấm lại để dừng" : "Bấm micro để bắt đầu nói"}
-            </p>
+            </p>}
           </div>
-        )}
 
         {error && <p role="alert" className="mt-4 rounded-lg bg-red-50 text-red-700 p-3">{error}</p>}
 

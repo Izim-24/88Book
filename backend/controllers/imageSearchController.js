@@ -15,6 +15,24 @@ const normalize = (value) => String(value || "")
 const commonWords = new Set(["the", "and", "with", "for", "from", "book", "by", "it", "us", "of", "an", "a"]);
 const tokens = (value) => normalize(value).split(" ").filter((word) => word.length > 1 && !commonWords.has(word));
 
+const closeOcrWord = (expected, actual) => {
+  if (expected === actual) return true;
+  if (expected.length < 5 || Math.abs(expected.length - actual.length) > 1) return false;
+  let previous = Array.from({ length: actual.length + 1 }, (_, index) => index);
+  for (let row = 1; row <= expected.length; row++) {
+    const current = [row];
+    for (let col = 1; col <= actual.length; col++) {
+      current[col] = Math.min(
+        previous[col] + 1,
+        current[col - 1] + 1,
+        previous[col - 1] + (expected[row - 1] === actual[col - 1] ? 0 : 1),
+      );
+    }
+    previous = current;
+  }
+  return previous[actual.length] <= 1;
+};
+
 export const rankBooks = (books, recognizedText) => {
   const normalizedText = normalize(recognizedText);
   const words = new Set(normalizedText.split(" "));
@@ -27,13 +45,16 @@ export const rankBooks = (books, recognizedText) => {
     const titleWords = tokens(book.title);
     const authorWords = tokens(book.author);
     const titleHits = titleWords.filter((word) => words.has(word)).length;
-    const authorHits = authorWords.filter((word) => words.has(word)).length;
+    const authorHits = authorWords.filter((word) =>
+      [...words].some((ocrWord) => closeOcrWord(word, ocrWord))
+    ).length;
     const titleCoverage = titleWords.length ? titleHits / titleWords.length : 0;
     const authorCoverage = authorWords.length ? authorHits / authorWords.length : 0;
     const fullTitleMatch = title.length > 3 && normalizedText.includes(title);
+    const authorOnlyMatch = authorWords.length >= 2 && authorCoverage === 1;
     const score = isbnMatch ? 1 : Math.min(0.99,
-      (fullTitleMatch ? 0.7 : titleCoverage * 0.7) + authorCoverage * 0.2);
-    return { ...book, score: Number(score.toFixed(2)), matchReason: isbnMatch ? "ISBN" : fullTitleMatch ? "Title" : "Cover text" };
+      (fullTitleMatch ? 0.7 : titleCoverage * 0.7) + authorCoverage * (authorOnlyMatch ? 0.4 : 0.2));
+    return { ...book, score: Number(score.toFixed(2)), matchReason: isbnMatch ? "ISBN" : fullTitleMatch ? "Title" : authorOnlyMatch && !titleHits ? "Author" : "Cover text" };
   }).filter((book) => book.score >= 0.35)
     .sort((a, b) => b.score - a.score)
     .slice(0, 10);
