@@ -929,7 +929,6 @@ function AppContent() {
       <ImageSearchDialog
         open={imageSearchOpen}
         onClose={() => setImageSearchOpen(false)}
-        onSearchText={handleTopSearch}
         onAddToCart={handleAddToCart}
         onViewDetails={(book) => {
           setSelectedBook(book);

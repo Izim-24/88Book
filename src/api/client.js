@@ -1,6 +1,21 @@
 // API Configuration
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const API_ORIGIN = new URL(API_BASE_URL, window.location.origin).origin;
+
+const resolveImageUrls = (value) => {
+  if (Array.isArray(value)) return value.map(resolveImageUrls);
+  if (!value || typeof value !== "object") return value;
+  for (const [key, item] of Object.entries(value)) {
+    if ((key === "image_url" || key === "coverImage") &&
+        typeof item === "string" && item.startsWith("/uploads/")) {
+      value[key] = `${API_ORIGIN}${item}`;
+    } else if (item && typeof item === "object") {
+      resolveImageUrls(item);
+    }
+  }
+  return value;
+};
 
 class APIClient {
   constructor(baseURL) {
@@ -43,7 +58,7 @@ class APIClient {
         );
       }
 
-      return data;
+      return resolveImageUrls(data);
     } catch (error) {
       console.error("API Error:", error);
       // Return error object instead of throwing, for better error handling in components
@@ -125,6 +140,8 @@ export const booksAPI = {
     formData.append("image", image);
     return apiClient.postForm("/books/search-by-image", formData);
   },
+  searchByCoverText: (text) =>
+    apiClient.post("/books/search-by-image/text", { text }),
   searchByVoice: (text, lang = "vi-VN") =>
     apiClient.post("/books/search-by-voice", { text, lang }),
   create: (book) => apiClient.post("/books", book),
@@ -139,6 +156,12 @@ export const recommendationsAPI = {
     apiClient.post("/recommendations/search-history", { query }),
   getAlsoBought: (bookId) =>
     apiClient.get(`/recommendations/books/${bookId}/also-bought`),
+};
+
+export const chatAPI = {
+  getStatus: () => apiClient.get("/chat/status"),
+  send: (message, history = [], preferredBookIds = []) =>
+    apiClient.post("/chat", { message, history, preferredBookIds }),
 };
 
 // Cart API

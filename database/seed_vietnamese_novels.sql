@@ -1,16 +1,20 @@
--- Xóa dữ liệu sách cũ và seed tiểu thuyết Việt Nam với ảnh bìa thật
--- Chạy trong SSMS hoặc: sqlcmd -S localhost -E -d book_store -i seed_vietnamese_novels.sql
+-- Thêm sách mẫu còn thiếu; giữ nguyên sách, giỏ hàng và đơn hàng hiện có.
+-- Ảnh book_N.jpg đi theo thứ tự N trong danh sách dưới đây.
+-- ISBN trong dữ liệu mẫu chỉ dùng để xác định N, không ghi ISBN giả vào catalog.
+-- Với sqlcmd, dùng -f 65001 để đọc tên tiếng Việt UTF-8 đúng bảng mã.
+-- Bìa 11, 21, 26 thuộc tác phẩm khác nên không gắn vào sách mẫu.
+DECLARE @adminId INT = (SELECT TOP 1 id FROM users WHERE role = 'admin' ORDER BY id);
+IF @adminId IS NULL THROW 50001, 'Create an admin account before seeding books.', 1;
 
-DELETE FROM cart_items;
-DELETE FROM order_items;
-DELETE FROM recommendations;
-DELETE FROM book_search_history;
-DELETE FROM wishlists;
-DELETE FROM books;
-DBCC CHECKIDENT ('books', RESEED, 0);
-GO
-
-INSERT INTO books (title, author, description, price, category, isbn, quantity, image_url, rating) VALUES
+INSERT INTO books (title, author, description, price, category, isbn, quantity, image_url, rating, admin_id)
+SELECT source.title, source.author, source.description, source.price, source.category,
+       NULL, source.quantity,
+       CASE WHEN CONVERT(INT, RIGHT(source.isbn, 2)) IN (11, 21, 26) THEN NULL
+            ELSE CONCAT('/uploads/covers/book_', CONVERT(INT, RIGHT(source.isbn, 2)),
+                        CASE WHEN CONVERT(INT, RIGHT(source.isbn, 2)) IN (3, 4, 27)
+                             THEN '.webp' ELSE '.jpg' END) END,
+       source.rating, @adminId
+FROM (VALUES
 (N'Nhà Giả Kim', N'Paulo Coelho', N'Tiểu thuyết triết lý nổi tiếng thế giới về hành trình theo đuổi ước mơ của chàng chăn cừu Santiago. Cuốn sách đã thay đổi cuộc sống của hàng triệu người trên toàn cầu.', 79000, N'Văn học nước ngoài', '9786045060001', 50, 'https://salt.tikicdn.com/cache/400x400/ts/product/83/23/23/8e2e5b0e0e0e0e0e0e0e0e0e0e0e0e0e.jpg', 4.8),
 (N'Đắc Nhân Tâm', N'Dale Carnegie', N'Cuốn sách self-help kinh điển về nghệ thuật giao tiếp và ứng xử, giúp bạn thành công trong cuộc sống và công việc.', 86000, N'Kỹ năng sống', '9786045060002', 45, 'https://salt.tikicdn.com/cache/400x400/ts/product/8e/d8/3e/dac-nhan-tam.jpg', 4.7),
 (N'Tôi Thấy Hoa Vàng Trên Cỏ Xanh', N'Nguyễn Nhật Ánh', N'Truyện dài về tuổi thơ miền quê đầy cảm xúc của hai anh em Thiều và Tường. Đã được chuyển thể thành phim điện ảnh cùng tên.', 110000, N'Văn học Việt Nam', '9786045060003', 60, 'https://salt.tikicdn.com/cache/400x400/ts/product/2e/aa/8b/toi-thay-hoa-vang-tren-co-xanh.jpg', 4.9),
@@ -40,5 +44,9 @@ INSERT INTO books (title, author, description, price, category, isbn, quantity, 
 (N'Cô Gái Đến Từ Hôm Qua', N'Nguyễn Nhật Ánh', N'Truyện tình học trò trong sáng của Thư và Việt An - một trong những tác phẩm được yêu thích nhất của Nguyễn Nhật Ánh.', 88000, N'Văn học Việt Nam', '9786045060027', 42, 'https://salt.tikicdn.com/cache/400x400/ts/product/0e/0e/0e/co-gai-den-tu-hom-qua.jpg', 4.7),
 (N'Bố Già', N'Mario Puzo', N'Tiểu thuyết kinh điển về gia đình mafia Corleone - nền tảng của bộ phim huyền thoại The Godfather.', 140000, N'Văn học nước ngoài', '9786045060028', 15, 'https://salt.tikicdn.com/cache/400x400/ts/product/0e/0e/0e/bo-gia.jpg', 4.8),
 (N'Sherlock Holmes Toàn Tập', N'Arthur Conan Doyle', N'Tuyển tập truyện trinh thám kinh điển về thám tử tài ba Sherlock Holmes và bác sĩ Watson.', 165000, N'Trinh thám', '9786045060029', 20, 'https://salt.tikicdn.com/cache/400x400/ts/product/0e/0e/0e/sherlock-holmes.jpg', 4.9),
-(N'Mười Người Da Đen Nhỏ', N'Agatha Christie', N'Tiểu thuyết trinh thám bán chạy nhất mọi thời đại của Nữ hoàng trinh thám Agatha Christie.', 92000, N'Trinh thám', '9786045060030', 38, 'https://salt.tikicdn.com/cache/400x400/ts/product/0e/0e/0e/muoi-nguoi-da-den-nho.jpg', 4.7);
+(N'Mười Người Da Đen Nhỏ', N'Agatha Christie', N'Tiểu thuyết trinh thám bán chạy nhất mọi thời đại của Nữ hoàng trinh thám Agatha Christie.', 92000, N'Trinh thám', '9786045060030', 38, 'https://salt.tikicdn.com/cache/400x400/ts/product/0e/0e/0e/muoi-nguoi-da-den-nho.jpg', 4.7)
+) AS source(title, author, description, price, category, isbn, quantity, image_url, rating)
+WHERE NOT EXISTS (
+  SELECT 1 FROM books b WHERE b.title = source.title AND b.author = source.author
+);
 GO

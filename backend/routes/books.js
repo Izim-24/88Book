@@ -1,7 +1,7 @@
 import express from "express";
 import multer from "multer";
 import { authenticateToken, authorizeRole, identifyOptionalUser } from "../middleware/auth.js";
-import { searchBooksByImage } from "../controllers/imageSearchController.js";
+import { searchBooksByImage, searchBooksByRecognizedText } from "../controllers/imageSearchController.js";
 import { searchBooksByVoice } from "../controllers/voiceSearchController.js";
 import {
   getAllBooks,
@@ -23,6 +23,7 @@ const upload = multer({
 
 router.get("/", getAllBooks);
 router.get("/recommendations", getRecommendations);
+router.post("/search-by-image/text", searchBooksByRecognizedText);
 router.post("/search-by-image", (req, res, next) => {
   upload.single("image")(req, res, (error) => {
     if (error) {

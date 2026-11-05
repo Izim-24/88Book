@@ -9,19 +9,19 @@ const maxBytes = 5 * 1024 * 1024;
 interface ImageSearchDialogProps {
   open: boolean;
   onClose: () => void;
-  onSearchText: (text: string) => void;
   onAddToCart: (book: Book) => void;
   onViewDetails: (book: Book) => void;
   onToggleWishlist: (book: Book) => void;
   wishlist: Book[];
 }
 
-export function ImageSearchDialog({ open, onClose, onSearchText, onAddToCart, onViewDetails, onToggleWishlist, wishlist }: ImageSearchDialogProps) {
+export function ImageSearchDialog({ open, onClose, onAddToCart, onViewDetails, onToggleWishlist, wishlist }: ImageSearchDialogProps) {
   const libraryInput = useRef<HTMLInputElement>(null);
   const cameraInput = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState("");
   const [loading, setLoading] = useState(false);
+  const [matchingText, setMatchingText] = useState(false);
   const [error, setError] = useState("");
   const [searched, setSearched] = useState(false);
   const [recognizedText, setRecognizedText] = useState("");
@@ -49,8 +49,8 @@ export function ImageSearchDialog({ open, onClose, onSearchText, onAddToCart, on
     setResults([]);
     setRecognizedText("");
     setIsbn(null);
-    if (!allowedTypes.has(selected.type)) return setError("Choose a JPEG, PNG or WebP image.");
-    if (selected.size > maxBytes) return setError("Image must be 5 MB or smaller.");
+    if (!allowedTypes.has(selected.type)) { setFile(null); return setError("Choose a JPEG, PNG or WebP image."); }
+    if (selected.size > maxBytes) { setFile(null); return setError("Image must be 5 MB or smaller."); }
     setFile(selected);
   };
 
@@ -63,6 +63,25 @@ export function ImageSearchDialog({ open, onClose, onSearchText, onAddToCart, on
     setLoading(false);
     if (!response.success) return setError(response.message || "Could not recognize this image.");
     setRecognizedText(response.recognizedText || "");
+    setIsbn(response.isbn || null);
+    setResults((response.results || []).map((book: any) => ({
+      ...book,
+      id: String(book.id),
+      price: Number(book.price),
+      rating: Number(book.rating) || 0,
+      coverImage: book.image_url || "",
+    })));
+    setSearched(true);
+  };
+
+  const matchEditedText = async () => {
+    const text = recognizedText.trim();
+    if (!text || matchingText) return;
+    setMatchingText(true);
+    setError("");
+    const response = await booksAPI.searchByCoverText(text);
+    setMatchingText(false);
+    if (!response.success) return setError(response.message || "Could not search the cover text.");
     setIsbn(response.isbn || null);
     setResults((response.results || []).map((book: any) => ({
       ...book,
@@ -110,7 +129,7 @@ export function ImageSearchDialog({ open, onClose, onSearchText, onAddToCart, on
             <label htmlFor="recognized-cover-text" className="block text-sm font-medium mb-1">Text read from the cover</label>
             <div className="flex flex-col sm:flex-row gap-2">
               <input id="recognized-cover-text" value={recognizedText} onChange={(event) => setRecognizedText(event.target.value)} placeholder="Edit the title or author if recognition was wrong" className="flex-1 min-w-0 rounded-lg border border-border bg-background px-3 py-2" />
-              <button type="button" disabled={!recognizedText.trim()} onClick={() => { onSearchText(recognizedText.trim()); onClose(); }} className="rounded-lg border border-border px-4 py-2 disabled:opacity-50">Search as text</button>
+              <button type="button" disabled={!recognizedText.trim() || matchingText} onClick={matchEditedText} className="rounded-lg border border-border px-4 py-2 disabled:opacity-50">{matchingText ? "Đang tìm..." : "Tìm lại từ chữ"}</button>
             </div>
           </div>
           <h3 className="text-lg font-semibold">{results.length ? `${results.length} matching books` : "No matching books in our catalog"}</h3>

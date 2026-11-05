@@ -1,13 +1,18 @@
 import { createWorker } from "tesseract.js";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+import { readFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import pool from "../config/database.js";
 
 const ocrCachePath = process.env.OCR_CACHE_PATH || join(dirname(fileURLToPath(import.meta.url)), "../ocr-data");
+const coversPath = join(dirname(fileURLToPath(import.meta.url)), "../uploads/covers");
+const catalogSql = "SELECT id, title, author, description, price, category, isbn, quantity, image_url, rating FROM books";
 
 const normalize = (value) => String(value || "")
   .normalize("NFD")
   .replace(/[\u0300-\u036f]/g, "")
+  .replace(/[đĐ]/g, "d")
   .toLowerCase()
   .replace(/[^a-z0-9]+/g, " ")
   .trim();
@@ -69,28 +74,75 @@ const validImage = (file) => {
   return jpeg || png || webp;
 };
 
+const findCatalogMatches = async (recognizedText, books) => {
+  const catalog = books || (await pool.query(catalogSql)).rows;
+  const isbn = recognizedText.replace(/[^0-9X]/gi, "").match(/97[89][0-9]{10}|[0-9]{9}[0-9X]/i)?.[0] || null;
+  return { isbn, results: recognizedText ? rankBooks(catalog, recognizedText) : [] };
+};
+
+const digest = (buffer) => createHash("sha256").update(buffer).digest("hex");
+
+export const matchLocalCover = async (books, uploadedBuffer) => {
+  const uploadedDigest = digest(uploadedBuffer);
+  const candidates = books.filter((book) =>
+    /^\/uploads\/covers\/book_\d+\.(?:jpg|webp)$/.test(book.image_url || "")
+  );
+  const matches = await Promise.all(candidates.map(async (book) => {
+    try {
+      const filename = book.image_url.split("/").pop();
+      const file = await readFile(join(coversPath, filename));
+      return digest(file) === uploadedDigest ? book : null;
+    } catch {
+      return null;
+    }
+  }));
+  const book = matches.find(Boolean);
+  return book ? { ...book, score: 1, matchReason: "Cover image" } : null;
+};
+
+export const searchBooksByRecognizedText = async (req, res) => {
+  const recognizedText = String(req.body?.text || "").trim();
+  if (!recognizedText || recognizedText.length > 2000) {
+    return res.status(400).json({ success: false, message: "Enter up to 2000 characters from the cover." });
+  }
+  try {
+    const matches = await findCatalogMatches(recognizedText);
+    return res.json({ success: true, recognizedText, ...matches });
+  } catch (error) {
+    console.error("Cover text search failed:", error);
+    return res.status(503).json({ success: false, message: "Book search is unavailable." });
+  }
+};
+
 let ocrBusy = false;
 
 export const searchBooksByImage = async (req, res) => {
   if (!req.file) return res.status(400).json({ success: false, message: "Choose a JPEG, PNG or WebP image." });
   if (!validImage(req.file)) return res.status(415).json({ success: false, message: "The uploaded file is not a valid image." });
-  if (ocrBusy) return res.status(429).json({ success: false, message: "Image recognition is busy. Please try again." });
 
-  ocrBusy = true;
+  let claimedWorker = false;
   let worker;
   try {
-    worker = await createWorker(process.env.OCR_LANGS || "eng", 1, { cachePath: ocrCachePath });
+    const catalog = (await pool.query(catalogSql)).rows;
+    const exactCover = await matchLocalCover(catalog, req.file.buffer);
+    if (exactCover) {
+      return res.json({ success: true, recognizedText: "", isbn: exactCover.isbn || null, results: [exactCover] });
+    }
+    if (ocrBusy) return res.status(429).json({ success: false, message: "Image recognition is busy. Please try again." });
+    ocrBusy = true;
+    claimedWorker = true;
+    const languages = (process.env.OCR_LANGS || "eng,vie")
+      .split(/[,+]/).map((lang) => lang.trim()).filter(Boolean);
+    worker = await createWorker(languages, 1, { cachePath: ocrCachePath });
     const { data } = await worker.recognize(req.file.buffer);
     const recognizedText = String(data.text || "").trim().slice(0, 2000);
-    const catalog = await pool.query("SELECT id, title, author, description, price, category, isbn, quantity, image_url, rating FROM books");
-    const results = recognizedText ? rankBooks(catalog.rows, recognizedText) : [];
-    const isbn = recognizedText.replace(/[^0-9X]/gi, "").match(/97[89][0-9]{10}|[0-9]{9}[0-9X]/i)?.[0] || null;
-    return res.json({ success: true, recognizedText, isbn, results });
+    const matches = await findCatalogMatches(recognizedText, catalog);
+    return res.json({ success: true, recognizedText, ...matches });
   } catch (error) {
     console.error("Image search failed:", error);
     return res.status(503).json({ success: false, message: "Image recognition is unavailable. Check the OCR language data connection and try again." });
   } finally {
-    ocrBusy = false;
+    if (claimedWorker) ocrBusy = false;
     if (worker) await worker.terminate().catch(() => {});
   }
 };

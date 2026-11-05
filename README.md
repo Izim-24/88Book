@@ -203,17 +203,27 @@ Tesseract OCR để đọc chữ trên bìa, so ISBN, tên sách và tác giả 
 trong SQL Server, rồi chỉ trả về sách có trong catalog. Có thể sửa chữ nhận diện
 và tìm lại bằng tìm kiếm văn bản. API: `POST /api/books/search-by-image` với
 trường multipart `image`. Ảnh được xử lý trong bộ nhớ, không lưu trên server.
-Model tiếng Anh nằm trong `backend/ocr-data/eng.traineddata`, nên OCR tiếng Anh
-chạy được không cần tải model lúc khởi động. Có thể đổi `OCR_LANGS` trong
+Model tiếng Anh và tiếng Việt nằm trong `backend/ocr-data/`, nên OCR chạy được
+không cần tải model lúc khởi động. Mặc định `OCR_LANGS=eng,vie`; có thể đổi trong
 `backend/.env` nếu đã cài dữ liệu ngôn ngữ khác. Ảnh bìa rõ
-chữ cho kết quả tốt hơn; tính năng này không so khớp hình ảnh thuần túy.
+chữ cho kết quả tốt hơn. Ảnh trùng hoàn toàn với bìa local trong danh mục được
+nhận diện trực tiếp; ảnh chụp hoặc ảnh nén lại dùng OCR để so chữ và ISBN.
+`database/seed_vietnamese_novels.sql` thêm 30 sách mẫu và dùng ảnh local trong
+`backend/uploads/covers/`, giữ nguyên sách và đơn hàng đang có. ISBN giả trong
+nguồn seed không được lưu vào danh mục. Khi chạy với `sqlcmd`, dùng `-f 65001`
+để đọc file UTF-8 đúng bảng mã. Bìa 3, 4 và 27 là WebP; các bìa còn lại là JPEG.
+Bìa 11, 21 và 26 không khớp tác phẩm tương ứng trong seed nên không gắn với sách.
 
-## Trợ lý chọn sách và theo dõi giao hàng demo
+## Trợ lý chọn sách AI và theo dõi giao hàng demo
 
-Nút **Book guide** mở chatbot gợi ý sách theo thể loại, chủ đề và ngân sách;
-nếu đã đăng nhập, sách trong mục gợi ý cá nhân hóa được ưu tiên. Chatbot chỉ
-giới thiệu sách thật đang có trong catalog. Đây là chế độ demo dựa trên quy tắc,
-chưa gọi mô hình AI bên ngoài.
+Nút **Book guide** mở chatbot gọi một API theo chuẩn OpenAI Chat Completions qua
+backend. Đặt `AI_API_URL` (URL đầy đủ tới `/v1/chat/completions`), `AI_MODEL` và
+`AI_API_KEY` trong `backend/.env`, rồi khởi động lại backend. Ví dụ có trong
+`backend/.env.example`. Endpoint local HTTP trên `localhost` có thể không cần
+key. Chỉ backend giữ key; chatbot gửi lịch sử trò chuyện gần đây và tối đa 100
+sách còn hàng cho model. ID sách model đề xuất được kiểm tra lại với database
+trước khi hiển thị; nếu chưa cấu hình hoặc provider lỗi, giao diện báo rõ trạng
+thái. Sách gợi ý cá nhân hóa được đưa vào ngữ cảnh khi có.
 
 Trong **My Account → Orders**, chọn **Preview demo delivery map** hoặc
 **Track delivery** trên một đơn hàng. Bản đồ dùng OpenStreetMap/Leaflet; vị trí
