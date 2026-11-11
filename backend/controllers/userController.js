@@ -13,7 +13,7 @@ export const getUserProfile = async (req, res) => {
   try {
     const userId = req.user.userId;
     const result = await pool.query(
-      "SELECT id, email, full_name, role, created_at FROM users WHERE id = $1",
+      "SELECT id, email, full_name, phone, address, role, created_at FROM users WHERE id = $1",
       [userId],
     );
 
@@ -41,6 +41,17 @@ export const updateUserProfile = async (req, res) => {
   try {
     const userId = req.user.userId;
     const fullName = cleanText(req.body?.fullName, 255);
+    // CUSTOMERS.phone / address from the design model. Omitted = unchanged, "" = cleared.
+    const hasPhone = req.body?.phone !== undefined;
+    const hasAddress = req.body?.address !== undefined;
+    const phone = hasPhone ? cleanText(req.body.phone ?? "", 30) : null;
+    const address = hasAddress ? cleanText(req.body.address ?? "", 500) : null;
+    if (phone === undefined || (phone && !/^[0-9+().\s-]{6,30}$/.test(phone))) {
+      return res.status(400).json({ success: false, message: "Phone number is not valid" });
+    }
+    if (address === undefined) {
+      return res.status(400).json({ success: false, message: "Address must be at most 500 characters" });
+    }
     const email = req.body?.email == null ? null : normalizeEmail(req.body.email);
 
     if (fullName === undefined || fullName === "") {
@@ -65,8 +76,13 @@ export const updateUserProfile = async (req, res) => {
     }
 
     const result = await pool.query(
-      "UPDATE users SET full_name = COALESCE($1, full_name), email = COALESCE($2, email), updated_at = GETDATE() OUTPUT INSERTED.id, INSERTED.email, INSERTED.full_name, INSERTED.role WHERE id = $3",
-      [fullName, email, userId],
+      `UPDATE users SET full_name = COALESCE($1, full_name), email = COALESCE($2, email),
+              phone = CASE WHEN $4 = 1 THEN NULLIF($5, '') ELSE phone END,
+              address = CASE WHEN $6 = 1 THEN NULLIF($7, '') ELSE address END,
+              updated_at = GETDATE()
+       OUTPUT INSERTED.id, INSERTED.email, INSERTED.full_name, INSERTED.phone, INSERTED.address, INSERTED.role
+       WHERE id = $3`,
+      [fullName, email, userId, hasPhone ? 1 : 0, phone || "", hasAddress ? 1 : 0, address || ""],
     );
 
     if (result.rows.length === 0) {

@@ -2,9 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { Camera, ImagePlus, Search, X } from "lucide-react";
 import { booksAPI } from "../../api/client";
 import { BookCard, type Book } from "./BookCard";
+import { ObjectSelectionView, type Selection } from "./ObjectSelectionView";
 
 const allowedTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
-const maxBytes = 5 * 1024 * 1024;
+const maxBytes = 10 * 1024 * 1024;
+const FILE_ERROR = "Only JPG, PNG or WebP images up to 10 MB";
 
 interface ImageSearchDialogProps {
   open: boolean;
@@ -27,6 +29,8 @@ export function ImageSearchDialog({ open, onClose, onAddToCart, onViewDetails, o
   const [recognizedText, setRecognizedText] = useState("");
   const [isbn, setIsbn] = useState<string | null>(null);
   const [results, setResults] = useState<Book[]>([]);
+  const [selection, setSelection] = useState<Selection | null>(null);
+  const [noMatchMessage, setNoMatchMessage] = useState("");
 
   useEffect(() => {
     if (!file) { setPreview(""); return; }
@@ -49,8 +53,9 @@ export function ImageSearchDialog({ open, onClose, onAddToCart, onViewDetails, o
     setResults([]);
     setRecognizedText("");
     setIsbn(null);
-    if (!allowedTypes.has(selected.type)) { setFile(null); return setError("Choose a JPEG, PNG or WebP image."); }
-    if (selected.size > maxBytes) { setFile(null); return setError("Image must be 5 MB or smaller."); }
+    setSelection(null);
+    // "Validate image file" -> "Show file error"
+    if (!allowedTypes.has(selected.type) || selected.size > maxBytes) { setFile(null); return setError(FILE_ERROR); }
     setFile(selected);
   };
 
@@ -59,9 +64,11 @@ export function ImageSearchDialog({ open, onClose, onAddToCart, onViewDetails, o
     setLoading(true);
     setError("");
     setSearched(false);
-    const response = await booksAPI.searchByImage(file);
+    // "Confirm selection" -> "Search for similar products"
+    const response = await booksAPI.searchByImage(file, selection);
     setLoading(false);
     if (!response.success) return setError(response.message || "Could not recognize this image.");
+    setNoMatchMessage(response.message || "");
     setRecognizedText(response.recognizedText || "");
     setIsbn(response.isbn || null);
     setResults((response.results || []).map((book: any) => ({
@@ -82,6 +89,7 @@ export function ImageSearchDialog({ open, onClose, onAddToCart, onViewDetails, o
     const response = await booksAPI.searchByCoverText(text);
     setMatchingText(false);
     if (!response.success) return setError(response.message || "Could not search the cover text.");
+    setNoMatchMessage(response.message || "");
     setIsbn(response.isbn || null);
     setResults((response.results || []).map((book: any) => ({
       ...book,
@@ -101,7 +109,7 @@ export function ImageSearchDialog({ open, onClose, onAddToCart, onViewDetails, o
         <div className="flex items-start justify-between gap-4 mb-5">
           <div>
             <h2 id="image-search-title" className="text-2xl font-bold">Search books by cover</h2>
-            <p className="text-sm text-muted-foreground mt-1">Upload a clear photo with the title, author or ISBN visible.</p>
+            <p className="text-sm text-muted-foreground mt-1">Upload a photo of a book. Mark the book on the photo for better results.</p>
           </div>
           <button type="button" onClick={onClose} aria-label="Close image search" className="p-2 rounded-lg hover:bg-secondary"><X className="w-5 h-5" /></button>
         </div>
@@ -113,12 +121,17 @@ export function ImageSearchDialog({ open, onClose, onAddToCart, onViewDetails, o
           <input ref={cameraInput} type="file" accept="image/jpeg,image/png,image/webp" capture="environment" className="hidden" onChange={(event) => { selectFile(event.target.files?.[0]); event.target.value = ""; }} />
         </div>
 
-        {file && <div className="mt-5 flex flex-col sm:flex-row gap-4 items-start rounded-xl border border-border p-3">
-          {preview && <img src={preview} alt="Selected book cover" className="h-36 w-28 rounded-md object-contain bg-secondary" />}
+        {file && <div className="mt-5 flex flex-col md:flex-row gap-4 items-start rounded-xl border border-border p-3">
+          {preview && <ObjectSelectionView src={preview} selection={selection} onChange={setSelection} />}
           <div className="min-w-0 flex-1">
             <p className="font-medium break-all">{file.name}</p>
-            <p className="text-sm text-muted-foreground">{(file.size / 1024 / 1024).toFixed(2)} MB · JPEG, PNG or WebP · maximum 5 MB</p>
-            <button type="button" disabled={loading} onClick={searchImage} className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary text-primary-foreground px-4 py-2.5 disabled:opacity-50"><Search className="w-4 h-4" /> {loading ? "Reading cover..." : "Find books"}</button>
+            <p className="text-sm text-muted-foreground">{(file.size / 1024 / 1024).toFixed(2)} MB · JPG, PNG or WebP · maximum 10 MB</p>
+            <p className="mt-3 text-sm">
+              {selection
+                ? "The marked area will be searched. Click the photo once to clear it."
+                : "Drag on the photo to mark the book you want, or search the whole photo."}
+            </p>
+            <button type="button" disabled={loading} onClick={searchImage} className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary text-primary-foreground px-4 py-2.5 disabled:opacity-50"><Search className="w-4 h-4" /> {loading ? "Analysing image..." : selection ? "Confirm selection and search" : "Find similar books"}</button>
           </div>
         </div>}
 
@@ -132,7 +145,7 @@ export function ImageSearchDialog({ open, onClose, onAddToCart, onViewDetails, o
               <button type="button" disabled={!recognizedText.trim() || matchingText} onClick={matchEditedText} className="rounded-lg border border-border px-4 py-2 disabled:opacity-50">{matchingText ? "Đang tìm..." : "Tìm lại từ chữ"}</button>
             </div>
           </div>
-          <h3 className="text-lg font-semibold">{results.length ? `${results.length} matching books` : "No matching books in our catalog"}</h3>
+          <h3 className="text-lg font-semibold">{results.length ? `${results.length} matching ${results.length === 1 ? "book" : "books"}` : noMatchMessage || "No matching products found"}</h3>
           {!results.length && <p className="text-sm text-muted-foreground">Try a clearer photo, or edit the recognized text above.</p>}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {results.map((book) => <div key={book.id}>

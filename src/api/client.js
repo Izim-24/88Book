@@ -135,11 +135,14 @@ export const booksAPI = {
   },
   getById: (id) => apiClient.get(`/books/${id}`),
   getRecommendations: () => apiClient.get("/books/recommendations"),
-  searchByImage: (image) => {
+  // selection: the marked target object as fractions { x, y, width, height }, or null.
+  searchByImage: (image, selection = null) => {
     const formData = new FormData();
     formData.append("image", image);
+    if (selection) formData.append("selection", JSON.stringify(selection));
     return apiClient.postForm("/books/search-by-image", formData);
   },
+  getCategories: () => apiClient.get("/books/categories"),
   searchByCoverText: (text) =>
     apiClient.post("/books/search-by-image/text", { text }),
   searchByVoice: (text, lang = "vi-VN") =>
@@ -147,6 +150,14 @@ export const booksAPI = {
   create: (book) => apiClient.post("/books", book),
   update: (id, book) => apiClient.put(`/books/${id}`, book),
   delete: (id) => apiClient.delete(`/books/${id}`),
+};
+
+// Search API (SearchController in the design's sequence diagrams)
+export const searchAPI = {
+  getSuggestions: () => apiClient.get("/search/suggestions"),
+  // record=false runs the search without saving it to the customer's history.
+  byKeyword: (keyword, record = true) =>
+    apiClient.post("/search/keyword", { keyword, record }),
 };
 
 // AI Recommendations API

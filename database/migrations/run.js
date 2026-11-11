@@ -1,4 +1,5 @@
 import pool from "../../backend/config/database.js";
+import { designAlignmentStatements } from "./design-alignment.js";
 
 const createTables = async () => {
   try {
@@ -341,6 +342,11 @@ const createTables = async () => {
       ) AS sample(isbn, old_price, vnd_price)
         ON b.isbn = sample.isbn AND b.price = sample.old_price;
     `);
+
+    for (const statement of designAlignmentStatements) {
+      await pool.query(statement);
+    }
+    console.log("✅ Design model tables and columns are in place");
 
     console.log("✅ Migration finished");
   } catch (error) {

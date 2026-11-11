@@ -1,5 +1,15 @@
 import { FormEvent, useEffect, useState } from "react";
-import { ShoppingCart, BookOpen, Search, Camera, Mic, User, Package, ArrowLeft } from "lucide-react";
+import { ShoppingCart, BookOpen, Search, Camera, Mic, User, Package, ArrowLeft, Clock, TrendingUp } from "lucide-react";
+import { searchAPI } from "../../api/client";
+
+// "Search by keyword" sequence: validateFormat(keyword) -> 2-50 characters.
+export const KEYWORD_MIN = 2;
+export const KEYWORD_MAX = 50;
+export const INVALID_KEYWORD_MESSAGE = `Keyword must be ${KEYWORD_MIN}-${KEYWORD_MAX} characters`;
+export const isValidKeyword = (value: string) => {
+  const length = value.trim().replace(/\s+/g, " ").length;
+  return length >= KEYWORD_MIN && length <= KEYWORD_MAX;
+};
 
 interface NavigationProps {
   cartItemCount: number;
@@ -30,6 +40,28 @@ export function Navigation({
 }: NavigationProps) {
   const [query, setQuery] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [keywordError, setKeywordError] = useState("");
+  const [suggested, setSuggested] = useState<{ recent: string[]; trending: string[] }>({ recent: [], trending: [] });
+
+  // selectSearchBar() -> getRecentSearches + getTrendingKeywords -> showSuggestedKeywords
+  const loadSuggestedKeywords = () => {
+    searchAPI.getSuggestions().then((response: any) => {
+      if (response.success) {
+        setSuggested({ recent: response.recent || [], trending: response.trending || [] });
+      }
+    });
+  };
+
+  const submitKeyword = (value: string) => {
+    const keyword = value.trim().replace(/\s+/g, " ");
+    if (!isValidKeyword(keyword)) {
+      setKeywordError(INVALID_KEYWORD_MESSAGE);
+      return;
+    }
+    setKeywordError("");
+    setShowSuggestions(false);
+    onSearchSubmit?.(keyword);
+  };
 
   useEffect(() => {
     if (currentPage !== "browse") {
@@ -39,8 +71,7 @@ export function Navigation({
 
   const handleSearchSubmit = (e: FormEvent) => {
     e.preventDefault();
-    onSearchSubmit?.(query.trim());
-    setShowSuggestions(false);
+    submitKeyword(query);
   };
 
   const filteredSuggestions = query.trim()
@@ -95,8 +126,17 @@ export function Navigation({
               <input
                 type="text"
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onFocus={() => setShowSuggestions(true)}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setKeywordError("");
+                }}
+                onFocus={() => {
+                  setShowSuggestions(true);
+                  loadSuggestedKeywords();
+                }}
+                maxLength={100}
+                aria-invalid={Boolean(keywordError)}
+                aria-describedby={keywordError ? "keyword-error" : undefined}
                 onBlur={() => {
                   setTimeout(() => setShowSuggestions(false), 120);
                 }}
@@ -104,7 +144,38 @@ export function Navigation({
                 className="w-full bg-transparent outline-none placeholder:text-muted-foreground"
               />
             </div>
-            {showSuggestions && filteredSuggestions.length > 0 && (
+            {keywordError && (
+              <p id="keyword-error" role="alert" className="absolute top-12 left-0 right-0 z-50 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
+                {keywordError}
+              </p>
+            )}
+            {!keywordError && showSuggestions && !query.trim() && (suggested.recent.length > 0 || suggested.trending.length > 0) && (
+              <div className="absolute top-12 left-0 right-0 bg-background border border-border rounded-xl shadow-lg z-50 py-2">
+                {[
+                  { title: "Recent searches", icon: Clock, items: suggested.recent },
+                  { title: "Trending", icon: TrendingUp, items: suggested.trending },
+                ].filter((group) => group.items.length > 0).map((group) => (
+                  <div key={group.title}>
+                    <p className="px-4 pt-1 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{group.title}</p>
+                    {group.items.map((item) => (
+                      <button
+                        key={`${group.title}-${item}`}
+                        type="button"
+                        onClick={() => {
+                          setQuery(item);
+                          submitKeyword(item);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm hover:bg-secondary transition-colors flex items-center gap-2"
+                      >
+                        <group.icon className="w-3.5 h-3.5 text-muted-foreground" />
+                        {item}
+                      </button>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
+            {!keywordError && showSuggestions && filteredSuggestions.length > 0 && (
               <div className="absolute top-12 left-0 right-0 bg-background border border-border rounded-xl shadow-lg z-50 py-2">
                 {filteredSuggestions.map((suggestion) => (
                   <button
@@ -112,8 +183,7 @@ export function Navigation({
                     type="button"
                     onClick={() => {
                       setQuery(suggestion);
-                      onSearchSubmit?.(suggestion);
-                      setShowSuggestions(false);
+                      submitKeyword(suggestion);
                     }}
                     className="w-full px-4 py-2 text-left text-sm hover:bg-secondary transition-colors"
                   >
@@ -126,7 +196,7 @@ export function Navigation({
 
           <div className="flex items-center gap-1 sm:gap-3">
             <button
-              onClick={() => onSearchSubmit?.(query.trim())}
+              onClick={() => (query.trim() ? submitKeyword(query) : onSearchSubmit?.(""))}
               className="p-2 hover:bg-accent rounded-lg transition-colors"
               aria-label="Search"
             >

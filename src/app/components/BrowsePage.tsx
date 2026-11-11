@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { BookCard, Book } from "./BookCard";
+import { booksAPI, searchAPI } from "../../api/client";
+import { INVALID_KEYWORD_MESSAGE, isValidKeyword } from "./Navigation";
 import {
   Search,
   SlidersHorizontal,
@@ -23,22 +25,6 @@ interface BrowsePageProps {
   onOpenImageSearch?: () => void;
   onOpenVoiceSearch?: () => void;
 }
-
-const categories = [
-  "All",
-  "Fiction",
-  "Mystery",
-  "Science",
-  "Romance",
-  "Fantasy",
-  "Biography",
-  "Self-Help",
-  "Psychology",
-  "Business",
-  "Manga",
-  "Cooking",
-  "Classic",
-];
 
 const sections = [
   { id: "all" as const, label: "All Books", icon: BookOpen },
@@ -68,21 +54,71 @@ export function BrowsePage({
     "title" | "price-low" | "price-high" | "rating"
   >("title");
   const [showFilters, setShowFilters] = useState(false);
+  const [categories, setCategories] = useState<string[]>(["All"]);
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+  // Book ids returned by the server's keyword search; null = no keyword active.
+  const [matchingIds, setMatchingIds] = useState<Set<string> | null>(null);
+  const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState("");
+
+  // CATEGORIES from the database (falls back to the categories of loaded books).
+  useEffect(() => {
+    booksAPI.getCategories().then((response: any) => {
+      const names = response.success
+        ? (response.categories || []).filter((item: any) => item.book_count > 0).map((item: any) => item.name)
+        : Array.from(new Set(books.map((book: any) => book.category).filter(Boolean)));
+      setCategories(["All", ...names]);
+    });
+  }, [books.length]);
 
   useEffect(() => {
     setSearchQuery(initialSearchQuery);
   }, [initialSearchQuery]);
 
+  // Keyword search runs on the server (accent-insensitive, word based) while
+  // typing; it is saved to search history only when the customer submits it.
   useEffect(() => {
     const query = searchQuery.trim();
-    if (query.length < 2) return;
+    if (!query) {
+      setMatchingIds(null);
+      setSearchError("");
+      return;
+    }
+    if (!isValidKeyword(query)) {
+      setMatchingIds(new Set());
+      setSearchError(INVALID_KEYWORD_MESSAGE);
+      return;
+    }
+    setSearchError("");
+    let cancelled = false;
+    const timeoutId = window.setTimeout(async () => {
+      setSearching(true);
+      const response: any = await searchAPI.byKeyword(query, false);
+      if (cancelled) return;
+      setSearching(false);
+      if (response.success) {
+        setMatchingIds(new Set((response.products || []).map((book: any) => String(book.id))));
+      } else {
+        setSearchError(response.message || "Search is unavailable.");
+      }
+    }, 300);
 
-    const timeoutId = window.setTimeout(() => {
-      onSearchRecorded?.(query);
-    }, 800);
-
-    return () => window.clearTimeout(timeoutId);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
   }, [searchQuery]);
+
+  const submitSearch = (event: FormEvent) => {
+    event.preventDefault();
+    const query = searchQuery.trim();
+    if (!isValidKeyword(query)) {
+      setSearchError(INVALID_KEYWORD_MESSAGE);
+      return;
+    }
+    onSearchRecorded?.(query);
+  };
 
   // Format books from API response to match Book interface
   const formattedBooks = books.map((book: any) => ({
@@ -125,18 +161,20 @@ export function BrowsePage({
   }
 
   // Filter books
+  // "Filter search results": keyword, category and price range.
+  const min = minPrice === "" ? null : Number(minPrice);
+  const max = maxPrice === "" ? null : Number(maxPrice);
+  const priceRangeInvalid = min !== null && max !== null && min > max;
   const filteredBooks = sectionBooks.filter((book) => {
-    const normalizedQuery = searchQuery.toLowerCase();
-    const matchesSearch =
-      book.title.toLowerCase().includes(normalizedQuery) ||
-      book.author.toLowerCase().includes(normalizedQuery) ||
-      (book.category || "").toLowerCase().includes(normalizedQuery);
-
+    const matchesSearch = matchingIds === null || matchingIds.has(String(book.id));
     const matchesCategory =
       selectedCategory === "All" || book.category === selectedCategory;
-
-    return matchesSearch && matchesCategory;
+    const price = Number(book.price);
+    const matchesPrice = priceRangeInvalid ||
+      ((min === null || price >= min) && (max === null || price <= max));
+    return matchesSearch && matchesCategory && matchesPrice;
   });
+  const keywordActive = matchingIds !== null;
 
   // Sort books
   const sortedBooks = [...filteredBooks].sort((a, b) => {
@@ -196,16 +234,19 @@ export function BrowsePage({
         <div className="mb-8 space-y-4">
           <div className="flex flex-col sm:flex-row gap-4">
             {/* Search */}
-            <div className="flex-1 relative">
+            <form onSubmit={submitSearch} className="flex-1 relative" role="search">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <input
                 type="text"
-                placeholder="Search by title or author..."
+                placeholder="Search by title, author or category..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                maxLength={100}
+                aria-invalid={Boolean(searchError)}
+                aria-describedby={searchError ? "browse-search-error" : undefined}
                 className="w-full pl-10 pr-4 py-3 bg-input-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
               />
-            </div>
+            </form>
 
             <button type="button" onClick={onOpenVoiceSearch} className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-border hover:bg-secondary" aria-label="Search by voice"><Mic className="w-5 h-5" /> Search by voice</button>
             <button type="button" onClick={onOpenImageSearch} className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-border hover:bg-secondary" aria-label="Search by book cover"><Camera className="w-5 h-5" /> Search by image</button>
@@ -232,8 +273,39 @@ export function BrowsePage({
             </button>
           </div>
 
-          {/* Category Filters */}
-          <div className={`${showFilters ? "block" : "hidden"} sm:block`}>
+          {searchError && (
+            <p id="browse-search-error" role="alert" className="text-sm text-red-700">{searchError}</p>
+          )}
+
+          {/* Category and price filters */}
+          <div className={`${showFilters ? "block" : "hidden"} sm:block space-y-3`}>
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <span className="text-muted-foreground">Price (₫)</span>
+              <input
+                type="number"
+                min={0}
+                step={1000}
+                inputMode="numeric"
+                placeholder="From"
+                value={minPrice}
+                onChange={(e) => setMinPrice(e.target.value)}
+                aria-label="Minimum price in VND"
+                className="w-32 px-3 py-2 bg-input-background border border-border rounded-lg"
+              />
+              <span aria-hidden="true">–</span>
+              <input
+                type="number"
+                min={0}
+                step={1000}
+                inputMode="numeric"
+                placeholder="To"
+                value={maxPrice}
+                onChange={(e) => setMaxPrice(e.target.value)}
+                aria-label="Maximum price in VND"
+                className="w-32 px-3 py-2 bg-input-background border border-border rounded-lg"
+              />
+              {priceRangeInvalid && <span role="alert" className="text-red-700">"From" must not exceed "To"</span>}
+            </div>
             <div className="flex flex-wrap gap-2">
               {categories.map((category) => (
                 <button
@@ -253,9 +325,8 @@ export function BrowsePage({
         </div>
 
         {/* Results Count */}
-        <p className="text-muted-foreground mb-6">
-          Showing {sortedBooks.length}{" "}
-          {sortedBooks.length === 1 ? "book" : "books"}
+        <p className="text-muted-foreground mb-6" aria-live="polite">
+          {searching ? "Searching..." : <>Showing {sortedBooks.length} {sortedBooks.length === 1 ? "book" : "books"}</>}
         </p>
 
         {/* Books Grid */}
@@ -278,13 +349,15 @@ export function BrowsePage({
         ) : (
           <div className="text-center py-16">
             <p className="text-muted-foreground text-lg">
-              No books found matching your criteria.
+              {keywordActive && !searchError ? "No products found" : "No books found matching your criteria."}
             </p>
             <button
               onClick={() => {
                 setSearchQuery("");
                 setSelectedCategory("All");
                 setActiveSection("all");
+                setMinPrice("");
+                setMaxPrice("");
               }}
               className="mt-4 text-primary hover:underline"
             >

@@ -1,4 +1,5 @@
 import pool from "../config/database.js";
+import { searchHistoryRepository } from "../repositories/searchHistoryRepository.js";
 
 const MAX_RECOMMENDATIONS = 8;
 
@@ -45,6 +46,8 @@ const ensureSearchHistoryTable = async () => {
         id INT IDENTITY(1,1) PRIMARY KEY,
         user_id INT NOT NULL,
         query NVARCHAR(255) NOT NULL,
+        search_type NVARCHAR(10) NOT NULL CONSTRAINT DF_book_search_history_type DEFAULT 'keyword',
+        image_url NVARCHAR(500) NULL,
         created_at DATETIME DEFAULT GETDATE(),
         CONSTRAINT FK_book_search_history_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       );
@@ -384,7 +387,7 @@ export const getPersonalizedRecommendations = async (req, res) => {
         `
         SELECT TOP 12 query, created_at
         FROM book_search_history
-        WHERE user_id = $1
+        WHERE user_id = $1 AND search_type IN ('keyword', 'voice')
         ORDER BY created_at DESC
         `,
         [userId],
@@ -504,27 +507,7 @@ export const recordSearch = async (req, res) => {
       });
     }
 
-    await pool.query(
-      "INSERT INTO book_search_history (user_id, query) VALUES ($1, $2)",
-      [userId, query],
-    );
-
-    await pool.query(
-      `
-      DELETE FROM book_search_history
-      WHERE user_id = $1
-        AND id NOT IN (
-          SELECT id
-          FROM (
-            SELECT TOP 40 id
-            FROM book_search_history
-            WHERE user_id = $1
-            ORDER BY created_at DESC
-          ) recent_searches
-        )
-      `,
-      [userId],
-    );
+    await searchHistoryRepository.save({ customerId: userId, searchType: "keyword", queryText: query });
 
     res.status(201).json({
       success: true,

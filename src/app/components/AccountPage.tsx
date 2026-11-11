@@ -1,5 +1,5 @@
 /* @ts-nocheck */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { User, Package, MapPin, Settings, Heart, LogOut } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import {
@@ -22,6 +22,7 @@ export interface UserProfile {
   name: string;
   email: string;
   phone: string;
+  address: string;
   joinedDate: string;
 }
 
@@ -100,6 +101,10 @@ export function AccountPage({
 }: AccountPageProps) {
   const [editingProfile, setEditingProfile] = useState(false);
   const [profileForm, setProfileForm] = useState(user);
+  // Keep the form in step with the signed-in user while it is not being edited.
+  useEffect(() => {
+    if (!editingProfile) setProfileForm(user);
+  }, [user, editingProfile]);
   const [addingAddress, setAddingAddress] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
   const [authLoading, setAuthLoading] = useState(false);
@@ -394,7 +399,11 @@ export function AccountPage({
                     </div>
                     <div>
                       <Label className="text-muted-foreground">Phone</Label>
-                      <p>{user.phone}</p>
+                      <p>{user.phone || "—"}</p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">Address</Label>
+                      <p>{user.address || "—"}</p>
                     </div>
                     <div>
                       <Label className="text-muted-foreground">
@@ -439,11 +448,29 @@ export function AccountPage({
                       <Label htmlFor="phone">Phone</Label>
                       <Input
                         id="phone"
+                        type="tel"
+                        autoComplete="tel"
+                        maxLength={30}
                         value={profileForm.phone}
                         onChange={(e) =>
                           setProfileForm({
                             ...profileForm,
                             phone: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="profile-address">Address</Label>
+                      <Input
+                        id="profile-address"
+                        autoComplete="street-address"
+                        maxLength={500}
+                        value={profileForm.address}
+                        onChange={(e) =>
+                          setProfileForm({
+                            ...profileForm,
+                            address: e.target.value,
                           })
                         }
                       />

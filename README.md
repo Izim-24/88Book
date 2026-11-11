@@ -202,11 +202,17 @@ Quan hệ dữ liệu chính:
 ## Tìm sách bằng ảnh
 
 Nhấn biểu tượng máy ảnh trên thanh điều hướng hoặc **Search by image** ở trang Browse.
-Chọn ảnh JPEG/PNG/WebP tối đa 5 MB hoặc chụp ảnh trên điện thoại. Backend dùng
-Tesseract OCR để đọc chữ trên bìa, so ISBN, tên sách và tác giả với bảng `books`
-trong SQL Server, rồi chỉ trả về sách có trong catalog. Có thể sửa chữ nhận diện
-và tìm lại bằng tìm kiếm văn bản. API: `POST /api/books/search-by-image` với
-trường multipart `image`. Ảnh được xử lý trong bộ nhớ, không lưu trên server.
+Chọn ảnh JPG/PNG/WebP tối đa 10 MB hoặc chụp ảnh trên điện thoại. Có thể kéo chuột
+trên ảnh để **đánh dấu cuốn sách** (Mark the target object) rồi bấm **Confirm
+selection and search**; không đánh dấu thì cả ảnh được dùng. Backend cắt vùng đã
+chọn, tự bỏ nền xung quanh bìa, rồi kết hợp hai tín hiệu: đặc trưng hình ảnh (mã
+hash hình dạng + biểu đồ màu, tính bằng `sharp`, so với bìa trong
+`backend/uploads/covers/`) và chữ trên bìa đọc bằng Tesseract OCR (so ISBN, tên
+sách, tác giả). Kết quả chỉ gồm sách có trong catalog và ghi rõ lý do khớp. Có thể
+sửa chữ nhận diện và tìm lại. API: `POST /api/books/search-by-image` với trường
+multipart `image` và trường tùy chọn `selection` (JSON `{x, y, width, height}`,
+tỉ lệ 0–1). Ảnh được xử lý trong bộ nhớ, không lưu trên server; với khách đã đăng
+nhập, lượt tìm được ghi vào lịch sử tìm kiếm (loại `image`) kèm đặc trưng đã trích.
 Model tiếng Anh và tiếng Việt nằm trong `backend/ocr-data/`, nên OCR chạy được
 không cần tải model lúc khởi động. Mặc định `OCR_LANGS=eng,vie`; có thể đổi trong
 `backend/.env` nếu đã cài dữ liệu ngôn ngữ khác. Ảnh bìa rõ

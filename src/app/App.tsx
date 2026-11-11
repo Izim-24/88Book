@@ -78,7 +78,7 @@ function AppContent() {
     return () => window.clearTimeout(timer);
   }, [notice]);
 
-  const { user, isAuthenticated, logout, login, register } = useAuth();
+  const { user, isAuthenticated, logout, login, register, updateUser } = useAuth();
   const {
     cartItems,
     itemCount: cartItemCount,
@@ -97,7 +97,8 @@ function AppContent() {
   const mockUser = {
     name: user?.fullName || "Guest",
     email: user?.email || "",
-    phone: "",
+    phone: user?.phone || "",
+    address: user?.address || "",
     joinedDate: user?.createdAt
       ? new Date(user.createdAt).toLocaleDateString()
       : "",
@@ -108,8 +109,16 @@ function AppContent() {
     const res = await usersAPI.updateProfile({
       fullName: profile.name,
       email: profile.email,
+      phone: profile.phone,
+      address: profile.address,
     });
     if (res.success) {
+      updateUser({
+        fullName: res.user?.full_name ?? profile.name,
+        email: res.user?.email ?? profile.email,
+        phone: res.user?.phone || "",
+        address: res.user?.address || "",
+      });
       setNotice("Profile updated successfully.");
     } else {
       setNotice(res.message || "Failed to update profile.");

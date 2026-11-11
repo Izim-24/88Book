@@ -95,6 +95,8 @@ export const AuthProvider = ({ children }) => {
     register,
     login,
     logout,
+    // Merge saved profile changes into the signed-in user.
+    updateUser: (changes) => setUser((current) => (current ? { ...current, ...changes } : current)),
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

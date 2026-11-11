@@ -66,6 +66,7 @@ import orderRoutes from "./routes/orders.js";
 import adminRoutes from "./routes/admin.js";
 import recommendationRoutes from "./routes/recommendations.js";
 import chatRoutes from "./routes/chat.js";
+import searchRoutes from "./routes/search.js";
 
 // API Routes
 app.use("/api/auth", authRoutes);
@@ -76,6 +77,7 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/recommendations", recommendationRoutes);
 app.use("/api/chat", chatRoutes);
+app.use("/api/search", searchRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

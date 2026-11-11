@@ -2,6 +2,7 @@ import pool from "../config/database.js";
 import bcrypt from "bcryptjs";
 import { ORDER_STATUSES } from "../constants/orderStatus.js";
 import { OrderTransitionError, transitionOrder } from "../services/orderLifecycle.js";
+import { searchHistoryRepository } from "../repositories/searchHistoryRepository.js";
 import {
   cleanText,
   isForeignKeyViolation,
@@ -214,7 +215,9 @@ export const deleteAdminUser = async (req, res) => {
       }
 
       // cart_items has no ON DELETE CASCADE; addresses, wishlists and history do.
+      // Voice/image search details point at history rows, so unlink them first.
       await query("DELETE FROM cart_items WHERE user_id = $1", [userId]);
+      await searchHistoryRepository.unlinkCustomerDetails(userId, query);
       await query("DELETE FROM users WHERE id = $1", [userId]);
       return "deleted";
     });

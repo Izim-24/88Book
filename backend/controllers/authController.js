@@ -196,7 +196,7 @@ export const loginUser = async (req, res) => {
 export const getCurrentUser = async (req, res) => {
   try {
     const result = await pool.query(
-      "SELECT id, email, full_name, role, created_at FROM users WHERE id = $1",
+      "SELECT id, email, full_name, phone, address, role, created_at FROM users WHERE id = $1",
       [req.user.userId],
     );
 
@@ -214,6 +214,8 @@ export const getCurrentUser = async (req, res) => {
         id: user.id,
         email: user.email,
         fullName: user.full_name,
+        phone: user.phone || "",
+        address: user.address || "",
         role: user.role,
         createdAt: user.created_at,
       },

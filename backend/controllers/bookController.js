@@ -1,4 +1,5 @@
 import pool from "../config/database.js";
+import { productRepository } from "../repositories/productRepository.js";
 import {
   cleanText,
   isUniqueViolation,
@@ -183,6 +184,16 @@ export const getBookById = async (req, res) => {
   }
 };
 
+// CATEGORIES (class diagram: Category categorizes Product)
+export const listCategories = async (_req, res) => {
+  try {
+    res.json({ success: true, categories: await productRepository.findCategories() });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Error fetching categories" });
+  }
+};
+
 const parseBookInput = (body = {}) => {
   const title = cleanText(body.title, 255);
   const author = cleanText(body.author, 255);
@@ -223,8 +234,8 @@ export const createBook = async (req, res) => {
     }
 
     const result = await pool.query(
-      "INSERT INTO books (title, author, description, price, category, isbn, quantity, image_url, admin_id) OUTPUT INSERTED.* VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
-      [...parsed.values, req.user.userId],
+      "INSERT INTO books (title, author, description, price, category, isbn, quantity, image_url, admin_id, category_id) OUTPUT INSERTED.* VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+      [...parsed.values, req.user.userId, await productRepository.ensureCategory(parsed.values[4])],
     );
 
     res.status(201).json({
@@ -250,9 +261,9 @@ export const updateBook = async (req, res) => {
     // Routes are admin-only, so admins may edit any book in the catalog.
     const result = await pool.query(
       `UPDATE books SET title = $1, author = $2, description = $3, price = $4, category = $5,
-              isbn = $6, quantity = $7, image_url = $8, updated_at = GETDATE()
+              isbn = $6, quantity = $7, image_url = $8, category_id = $10, updated_at = GETDATE()
        OUTPUT INSERTED.* WHERE id = $9`,
-      [...parsed.values, id],
+      [...parsed.values, id, await productRepository.ensureCategory(parsed.values[4])],
     );
 
     if (result.rows.length === 0) {
