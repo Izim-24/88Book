@@ -24,3 +24,14 @@ pnpm-lock.yaml
 # Visual Paradigm lock/backup files
 *.vpp.lck
 *.vpp.bak_*
+
+# Report/essay generation and diagram exports (kept locally, not part of the app)
+/deliverables/
+/ecommerce-diagrams/
+/*.py
+
+# Visual Paradigm design files
+*.vpp
+*.vux
+/E-Commerce-Context-Diagram.svg
+/E-Commerce-missing-diagrams.xmi
