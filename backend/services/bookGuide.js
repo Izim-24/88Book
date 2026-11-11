@@ -15,8 +15,22 @@ export function getAIConfig(env = process.env) {
   const local = ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
   if (url.protocol !== "https:" && !(local && url.protocol === "http:")) return null;
   if (!local && !apiKey) return null;
-  return { url: url.toString(), model, apiKey };
+  const requestedTokens = Number(env.AI_MAX_TOKENS);
+  const maxTokens = Number.isInteger(requestedTokens) && requestedTokens >= 100 && requestedTokens <= 8000
+    ? requestedTokens
+    : 2000;
+  // Optional comma-separated backups, tried when the main model is busy or retired.
+  const fallbackModels = String(env.AI_FALLBACK_MODELS || "")
+    .split(",")
+    .map((name) => name.trim())
+    .filter((name) => name && name !== model)
+    .slice(0, 3);
+  return { url: url.toString(), model, fallbackModels, apiKey, maxTokens };
 }
+
+// Overloaded (503), rate-limited (429), retired (404) or timed-out models are worth
+// retrying with a backup; a bad key (401/403) or bad request (400) is not.
+const RETRYABLE_PROVIDER_STATUSES = new Set([404, 408, 429, 500, 502, 503, 504]);
 
 export function validateChatInput(body) {
   const message = typeof body?.message === "string" ? body.message.trim() : "";
@@ -53,22 +67,44 @@ export async function generateBookGuideReply({ input, catalog, config, fetchImpl
     `DANH_MUC: ${JSON.stringify(catalogForModel)}`,
   ].join("\n");
 
-  const response = await fetchImpl(config.url, {
+  const requestModel = (model) => fetchImpl(config.url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       ...(config.apiKey ? { Authorization: `Bearer ${config.apiKey}` } : {}),
     },
     body: JSON.stringify({
-      model: config.model,
+      model,
       messages: [{ role: "system", content: system }, ...input.history, { role: "user", content: input.message }],
-      max_tokens: 400,
+      // OpenAI's newer models reject max_tokens. For "thinking" models (Gemini,
+      // gpt-oss) the limit also covers reasoning, so it must leave room for the reply.
+      ...(new URL(config.url).hostname === "api.openai.com"
+        ? { max_completion_tokens: config.maxTokens }
+        : { max_tokens: config.maxTokens }),
     }),
     signal: AbortSignal.timeout(25000),
   });
-  if (!response.ok) {
-    const error = new Error(`AI provider returned HTTP ${response.status}`);
+
+  const models = [config.model, ...(config.fallbackModels || [])];
+  let response;
+  let lastStatus = null;
+  for (const model of models) {
+    try {
+      response = await requestModel(model);
+    } catch (networkError) {
+      // Timeout or connection failure: try the next model, if any.
+      response = null;
+      lastStatus = networkError?.name === "TimeoutError" ? 504 : 503;
+      continue;
+    }
+    if (response.ok) break;
+    lastStatus = response.status;
+    if (!RETRYABLE_PROVIDER_STATUSES.has(response.status)) break;
+  }
+  if (!response?.ok) {
+    const error = new Error(`AI provider returned HTTP ${lastStatus}`);
     error.status = 502;
+    error.providerStatus = lastStatus;
     throw error;
   }
   const data = await response.json();
@@ -81,9 +117,8 @@ export async function generateBookGuideReply({ input, catalog, config, fetchImpl
     const end = raw.lastIndexOf("}");
     parsed = JSON.parse(raw.slice(start, end + 1));
   } catch {
-    const error = new Error("AI provider returned an invalid response");
-    error.status = 502;
-    throw error;
+    // Some models ignore the JSON instruction; show their text without book cards.
+    parsed = { reply: raw, bookIds: [] };
   }
   if (typeof parsed.reply !== "string" || !parsed.reply.trim()) {
     const error = new Error("AI provider returned an empty reply");

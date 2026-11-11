@@ -44,3 +44,58 @@ test("provider failure is surfaced without leaking its response", async () => {
     fetchImpl: async () => ({ ok: false, status: 401 }),
   }), { status: 502 });
 });
+
+test("plain-text model replies are shown without book cards", async () => {
+  const { generateBookGuideReply } = await import("../services/bookGuide.js");
+  const result = await generateBookGuideReply({
+    input: { message: "Xin chào", history: [], preferredBookIds: [] },
+    catalog: [{ id: 1, title: "Mắt Biếc", quantity: 3, price: 100000 }],
+    config: { url: "https://ai.example/v1/chat/completions", model: "m", apiKey: "k" },
+    fetchImpl: async () => ({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: "Chào bạn, bạn thích thể loại nào?" } }] }),
+    }),
+  });
+  assert.equal(result.reply, "Chào bạn, bạn thích thể loại nào?");
+  assert.deepEqual(result.books, []);
+});
+
+test("busy models fall back to the next one, but a bad key does not", async () => {
+  const { generateBookGuideReply, getAIConfig } = await import("../services/bookGuide.js");
+  const config = getAIConfig({
+    AI_API_URL: "https://ai.example/v1/chat/completions",
+    AI_MODEL: "main",
+    AI_API_KEY: "k",
+    AI_FALLBACK_MODELS: "backup, main ,spare",
+  });
+  assert.deepEqual(config.fallbackModels, ["backup", "spare"]);
+
+  const input = { message: "Xin chào", history: [], preferredBookIds: [] };
+  const catalog = [{ id: 1, title: "Mắt Biếc", quantity: 3, price: 100000 }];
+  const reply = { choices: [{ message: { content: "{\"reply\":\"Chào bạn\",\"bookIds\":[1]}" } }] };
+
+  const tried = [];
+  const result = await generateBookGuideReply({
+    input, catalog, config,
+    fetchImpl: async (_url, options) => {
+      const { model } = JSON.parse(options.body);
+      tried.push(model);
+      return model === "main" ? { ok: false, status: 503 } : { ok: true, json: async () => reply };
+    },
+  });
+  assert.deepEqual(tried, ["main", "backup"]);
+  assert.equal(result.reply, "Chào bạn");
+
+  const triedWithBadKey = [];
+  await assert.rejects(
+    generateBookGuideReply({
+      input, catalog, config,
+      fetchImpl: async (_url, options) => {
+        triedWithBadKey.push(JSON.parse(options.body).model);
+        return { ok: false, status: 401 };
+      },
+    }),
+    (error) => error.providerStatus === 401,
+  );
+  assert.deepEqual(triedWithBadKey, ["main"]);
+});

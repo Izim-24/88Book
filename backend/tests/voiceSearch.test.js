@@ -55,3 +55,22 @@ test("voice search saves an authenticated query for personalized recommendations
     pool.query = oldQuery;
   }
 });
+
+test("spoken sentences match by words, ignoring accents and filler words", async () => {
+  const { rankVoiceResults } = await import("../services/voiceSearch.js");
+  const books = [
+    { id: 1, title: "Atomic Habits", author: "James Clear", category: "Self-Help" },
+    { id: 2, title: "Mắt Biếc", author: "Nguyễn Nhật Ánh", category: "Tiểu thuyết" },
+    { id: 3, title: "Cho Tôi Xin Một Vé Đi Tuổi Thơ", author: "Nguyễn Nhật Ánh", category: "Tiểu thuyết" },
+    { id: 4, title: "Sherlock Holmes", author: "Arthur Conan Doyle", category: "Trinh thám" },
+  ];
+  const ids = (text) => rankVoiceResults(books, text).map((book) => book.id);
+
+  assert.deepEqual(ids("tìm sách Atomic Habits"), [1]);
+  assert.deepEqual(ids("atomic habit"), [1]);
+  assert.deepEqual(ids("sách của nguyen nhat anh").sort(), [2, 3]);
+  assert.deepEqual(ids("tìm cuốn mắt biếc"), [2]);
+  assert.deepEqual(ids("trinh thám"), [4]);
+  assert.deepEqual(ids("tìm sách"), []);
+  assert.deepEqual(ids("xyz qwerty"), []);
+});

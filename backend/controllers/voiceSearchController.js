@@ -1,4 +1,5 @@
 import pool from "../config/database.js";
+import { rankVoiceResults } from "../services/voiceSearch.js";
 
 // Nhận text đã được frontend chuyển từ giọng nói (Web Speech API),
 // lưu lịch sử voice query rồi tìm sách theo từ khóa.
@@ -14,13 +15,12 @@ export const searchBooksByVoice = async (req, res) => {
   try {
     const userId = req.user?.userId || null;
     const lang = String(req.body?.lang || "vi-VN").slice(0, 10);
-    const like = `%${text}%`;
-    const result = await pool.query(
-      `SELECT TOP 20 id, title, author, description, price, category, isbn, quantity, image_url, rating
-       FROM books
-       WHERE title LIKE $1 OR author LIKE $1 OR category LIKE $1`,
-      [like]
+    // Rank in JS: SQL LIKE only matched the exact spoken phrase and was accent-sensitive.
+    const catalog = await pool.query(
+      `SELECT TOP 2000 id, title, author, description, price, category, isbn, quantity, image_url, rating
+       FROM books`
     );
+    const results = rankVoiceResults(catalog.rows, text);
 
     // Search results should not fail when history storage is unavailable.
     try {
@@ -37,7 +37,7 @@ export const searchBooksByVoice = async (req, res) => {
     } catch (historyError) {
       console.warn("Voice search history was not saved:", historyError);
     }
-    return res.json({ success: true, recognizedText: text, results: result.rows });
+    return res.json({ success: true, recognizedText: text, results });
   } catch (error) {
     console.error("Voice search failed:", error);
     return res.status(500).json({ success: false, message: "Voice search is unavailable." });
