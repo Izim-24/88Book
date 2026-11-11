@@ -69,6 +69,7 @@ interface AccountPageProps {
   onUpdateAddress: (address: Address) => void;
   onDeleteAddress: (id: string) => void;
   onRemoveFromWishlist: (bookId: string) => void;
+  onCancelOrder: (orderId: string) => Promise<{ success: boolean; message?: string }>;
   onLogin?: (
     email: string,
     password: string,
@@ -93,6 +94,7 @@ export function AccountPage({
   onUpdateAddress,
   onDeleteAddress,
   onRemoveFromWishlist,
+  onCancelOrder,
   onLogin,
   onRegister,
 }: AccountPageProps) {
@@ -106,6 +108,18 @@ export function AccountPage({
   const [passwordMessage, setPasswordMessage] = useState("");
   const [passwordSaving, setPasswordSaving] = useState(false);
   const [trackingOrderId, setTrackingOrderId] = useState<string | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<string | null>(null);
+  const [cancelSaving, setCancelSaving] = useState(false);
+  const [cancelError, setCancelError] = useState("");
+
+  const confirmCancelOrder = async (orderId: string) => {
+    setCancelSaving(true);
+    setCancelError("");
+    const result = await onCancelOrder(orderId.replace(/^ORD-/, ""));
+    setCancelSaving(false);
+    if (result.success) setCancelTarget(null);
+    else setCancelError(result.message || "Could not cancel this order.");
+  };
 
   const handlePasswordChange = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -129,22 +143,10 @@ export function AccountPage({
     city: "",
     state: "",
     zipCode: "",
-    country: "United States",
+    country: "Vietnam",
     isDefault: false,
   });
 
-  const demoAccounts = [
-    {
-      label: "Admin",
-      email: "admin@bookhaven.local",
-      password: "Admin@123",
-    },
-    {
-      label: "Buyer",
-      email: "buyer@bookhaven.local",
-      password: "Buyer@123",
-    },
-  ];
 
   const handleSaveProfile = () => {
     onUpdateProfile(profileForm);
@@ -160,7 +162,7 @@ export function AccountPage({
       city: "",
       state: "",
       zipCode: "",
-      country: "United States",
+      country: "Vietnam",
       isDefault: false,
     });
     setAddingAddress(false);
@@ -222,16 +224,6 @@ export function AccountPage({
     } finally {
       setAuthLoading(false);
     }
-  };
-
-  const useDemoAccount = (account: (typeof demoAccounts)[number]) => {
-    setAuthMode("login");
-    setAuthError("");
-    setAuthForm({
-      email: account.email,
-      password: account.password,
-      fullName: "",
-    });
   };
 
   // Show login/register form if not logged in
@@ -312,45 +304,6 @@ export function AccountPage({
                       : "Create Account"}
                 </Button>
               </form>
-
-              {authMode === "login" && (
-                <div className="rounded-lg border border-border bg-secondary/40 p-4 space-y-3">
-                  <div>
-                    <p className="font-medium">Demo Accounts</p>
-                    <p className="text-sm text-muted-foreground">
-                      Use a seeded account for local testing.
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    {demoAccounts.map((account) => (
-                      <div
-                        key={account.email}
-                        className="flex items-center justify-between gap-3 rounded-md bg-background border border-border p-3"
-                      >
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium">
-                            {account.label}
-                          </p>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {account.email}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {account.password}
-                          </p>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => useDemoAccount(account)}
-                        >
-                          Use
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
 
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
@@ -567,7 +520,22 @@ export function AccountPage({
                           <span>Total</span>
                           <span>{formatVND(order.total)}</span>
                         </div>
-                        <Button variant="outline" size="sm" onClick={() => setTrackingOrderId(order.id.replace(/^ORD-/, ""))}>Track delivery</Button>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Button variant="outline" size="sm" onClick={() => setTrackingOrderId(order.id.replace(/^ORD-/, ""))}>Track delivery</Button>
+                          {order.status === "accepted" && cancelTarget !== order.id && (
+                            <Button variant="outline" size="sm" onClick={() => { setCancelTarget(order.id); setCancelError(""); }}>Cancel order</Button>
+                          )}
+                        </div>
+                        {cancelTarget === order.id && (
+                          <div className="rounded-lg border border-border bg-secondary/40 p-3 space-y-2">
+                            <p className="text-sm">Cancel this order and return its books to stock?</p>
+                            {cancelError && <p role="alert" className="text-sm text-destructive">{cancelError}</p>}
+                            <div className="flex gap-2">
+                              <Button size="sm" variant="destructive" disabled={cancelSaving} onClick={() => confirmCancelOrder(order.id)}>{cancelSaving ? "Cancelling..." : "Confirm cancellation"}</Button>
+                              <Button size="sm" variant="outline" disabled={cancelSaving} onClick={() => setCancelTarget(null)}>Keep order</Button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

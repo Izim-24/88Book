@@ -206,6 +206,50 @@
 }
 
 @layer components {
+  .skip-link {
+    position: fixed;
+    top: 0.75rem;
+    left: 0.75rem;
+    z-index: 100;
+    transform: translateY(-200%);
+    border-radius: 0.5rem;
+    background: var(--foreground);
+    color: var(--background);
+    padding: 0.75rem 1rem;
+  }
+
+  .skip-link:focus {
+    transform: translateY(0);
+  }
+
+  .app-notice {
+    position: fixed;
+    z-index: 100;
+    right: 1rem;
+    bottom: 1rem;
+    max-width: min(24rem, calc(100vw - 2rem));
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    background: var(--card);
+    color: var(--card-foreground);
+    box-shadow: 0 14px 36px rgba(40, 35, 29, 0.18);
+    padding: 0.875rem 1rem;
+  }
+
+  .app-notice button {
+    margin-left: auto;
+    font-size: 1.25rem;
+    line-height: 1;
+  }
+
+  :where(button, a, input, select, textarea):focus-visible {
+    outline: 3px solid var(--primary);
+    outline-offset: 3px;
+  }
+
   .section-block {
     padding-top: 5.5rem;
     padding-bottom: 5.5rem;
@@ -312,5 +356,18 @@
   .reveal-on-scroll.is-visible {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .reveal-on-scroll {
+    opacity: 1;
+    transform: none;
   }
 }

@@ -203,6 +203,19 @@ BEGIN
 END;
 GO
 
+-- Protect prices, stock and order quantities for both new and upgraded databases.
+IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = N'CK_books_price' AND parent_object_id = OBJECT_ID(N'dbo.books'))
+    ALTER TABLE dbo.books WITH CHECK ADD CONSTRAINT CK_books_price CHECK (price >= 0);
+IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = N'CK_books_quantity' AND parent_object_id = OBJECT_ID(N'dbo.books'))
+    ALTER TABLE dbo.books WITH CHECK ADD CONSTRAINT CK_books_quantity CHECK (quantity >= 0);
+IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = N'CK_cart_items_quantity' AND parent_object_id = OBJECT_ID(N'dbo.cart_items'))
+    ALTER TABLE dbo.cart_items WITH CHECK ADD CONSTRAINT CK_cart_items_quantity CHECK (quantity > 0);
+IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = N'CK_order_items_quantity' AND parent_object_id = OBJECT_ID(N'dbo.order_items'))
+    ALTER TABLE dbo.order_items WITH CHECK ADD CONSTRAINT CK_order_items_quantity CHECK (quantity > 0);
+IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = N'CK_orders_total_amount' AND parent_object_id = OBJECT_ID(N'dbo.orders'))
+    ALTER TABLE dbo.orders WITH CHECK ADD CONSTRAINT CK_orders_total_amount CHECK (total_amount >= 0);
+GO
+
 IF OBJECT_ID(N'dbo.book_search_history', N'U') IS NOT NULL
    AND NOT EXISTS (
        SELECT 1
@@ -214,6 +227,14 @@ BEGIN
     CREATE INDEX IX_book_search_history_user_created
     ON dbo.book_search_history(user_id, created_at DESC);
 END;
+GO
+
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes
+    WHERE name = N'IX_cart_items_user_book'
+      AND object_id = OBJECT_ID(N'dbo.cart_items')
+)
+    CREATE INDEX IX_cart_items_user_book ON dbo.cart_items(user_id, book_id);
 GO
 
 -- Migrate older local databases that were created before admin-owned books.
@@ -293,23 +314,8 @@ GO
 -- ------------------------------------------------------------
 -- Seed data (safe to rerun)
 -- ------------------------------------------------------------
--- Default admin credentials for local development:
---   Email: admin@bookhaven.local
---   Password: Admin@123
-
-IF NOT EXISTS (SELECT 1 FROM dbo.users WHERE email = N'admin@bookhaven.local')
-BEGIN
-    INSERT INTO dbo.users (email, password, full_name, role)
-    VALUES (N'admin@bookhaven.local', N'Admin@123', N'BookHaven Admin', N'admin');
-END;
-GO
-
-IF NOT EXISTS (SELECT 1 FROM dbo.users WHERE email = N'buyer@bookhaven.local')
-BEGIN
-    INSERT INTO dbo.users (email, password, full_name, role)
-    VALUES (N'buyer@bookhaven.local', N'Buyer@123', N'Demo Buyer', N'buyer');
-END;
-GO
+-- Create the first admin with `npm run bootstrap-admin` in backend/.
+-- Catalog seed rows below are added only when an admin exists.
 
 DECLARE @seedAdminId INT;
 SELECT TOP 1 @seedAdminId = id
@@ -322,61 +328,74 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM dbo.books WHERE isbn = N'9780735211292')
     BEGIN
         INSERT INTO dbo.books (title, author, description, price, category, isbn, quantity, image_url, admin_id, rating)
-        VALUES (N'Atomic Habits', N'James Clear', N'Build good habits and break bad ones.', 12.99, N'Self-Help', N'9780735211292', 24, N'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400', @seedAdminId, 4.8);
+        VALUES (N'Atomic Habits', N'James Clear', N'Build good habits and break bad ones.', 129000, N'Self-Help', N'9780735211292', 24, N'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400', @seedAdminId, 4.8);
     END;
 
     IF NOT EXISTS (SELECT 1 FROM dbo.books WHERE isbn = N'9780062315007')
     BEGIN
         INSERT INTO dbo.books (title, author, description, price, category, isbn, quantity, image_url, admin_id, rating)
-        VALUES (N'The Alchemist', N'Paulo Coelho', N'A timeless novel about purpose and dreams.', 10.50, N'Fiction', N'9780062315007', 18, N'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400', @seedAdminId, 4.6);
+        VALUES (N'The Alchemist', N'Paulo Coelho', N'A timeless novel about purpose and dreams.', 105000, N'Fiction', N'9780062315007', 18, N'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400', @seedAdminId, 4.6);
     END;
 
     IF NOT EXISTS (SELECT 1 FROM dbo.books WHERE isbn = N'9780547928227')
     BEGIN
         INSERT INTO dbo.books (title, author, description, price, category, isbn, quantity, image_url, admin_id, rating)
-        VALUES (N'The Hobbit', N'J.R.R. Tolkien', N'An epic fantasy adventure in Middle-earth.', 11.99, N'Fantasy', N'9780547928227', 15, N'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=400', @seedAdminId, 4.7);
+        VALUES (N'The Hobbit', N'J.R.R. Tolkien', N'An epic fantasy adventure in Middle-earth.', 119000, N'Fantasy', N'9780547928227', 15, N'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=400', @seedAdminId, 4.7);
     END;
 
     IF NOT EXISTS (SELECT 1 FROM dbo.books WHERE isbn = N'9780307476463')
     BEGIN
         INSERT INTO dbo.books (title, author, description, price, category, isbn, quantity, image_url, admin_id, rating)
-        VALUES (N'Thinking, Fast and Slow', N'Daniel Kahneman', N'Insights into human judgment and decision making.', 14.20, N'Science', N'9780307476463', 20, N'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=400', @seedAdminId, 4.5);
+        VALUES (N'Thinking, Fast and Slow', N'Daniel Kahneman', N'Insights into human judgment and decision making.', 142000, N'Science', N'9780307476463', 20, N'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=400', @seedAdminId, 4.5);
     END;
 
     IF NOT EXISTS (SELECT 1 FROM dbo.books WHERE isbn = N'9780141034355')
     BEGIN
         INSERT INTO dbo.books (title, author, description, price, category, isbn, quantity, image_url, admin_id, rating)
-        VALUES (N'Sherlock Holmes', N'Arthur Conan Doyle', N'Classic detective mysteries.', 9.90, N'Mystery', N'9780141034355', 16, N'https://images.unsplash.com/photo-1474932430478-367dbb6832c1?w=400', @seedAdminId, 4.6);
+        VALUES (N'Sherlock Holmes', N'Arthur Conan Doyle', N'Classic detective mysteries.', 99000, N'Mystery', N'9780141034355', 16, N'https://images.unsplash.com/photo-1474932430478-367dbb6832c1?w=400', @seedAdminId, 4.6);
     END;
 
     IF NOT EXISTS (SELECT 1 FROM dbo.books WHERE isbn = N'9781501128035')
     BEGIN
         INSERT INTO dbo.books (title, author, description, price, category, isbn, quantity, image_url, admin_id, rating)
-        VALUES (N'It Ends with Us', N'Colleen Hoover', N'A contemporary romance bestseller.', 13.40, N'Romance', N'9781501128035', 22, N'https://images.unsplash.com/photo-1519682337058-a94d519337bc?w=400', @seedAdminId, 4.4);
+        VALUES (N'It Ends with Us', N'Colleen Hoover', N'A contemporary romance bestseller.', 134000, N'Romance', N'9781501128035', 22, N'https://images.unsplash.com/photo-1519682337058-a94d519337bc?w=400', @seedAdminId, 4.4);
     END;
 
     IF NOT EXISTS (SELECT 1 FROM dbo.books WHERE isbn = N'9780812981605')
     BEGIN
         INSERT INTO dbo.books (title, author, description, price, category, isbn, quantity, image_url, admin_id, rating)
-        VALUES (N'Steve Jobs', N'Walter Isaacson', N'Biography of Steve Jobs.', 15.00, N'Biography', N'9780812981605', 12, N'https://images.unsplash.com/photo-1521587760476-6c12a4b040da?w=400', @seedAdminId, 4.5);
+        VALUES (N'Steve Jobs', N'Walter Isaacson', N'Biography of Steve Jobs.', 150000, N'Biography', N'9780812981605', 12, N'https://images.unsplash.com/photo-1521587760476-6c12a4b040da?w=400', @seedAdminId, 4.5);
     END;
 
     IF NOT EXISTS (SELECT 1 FROM dbo.books WHERE isbn = N'9781452162560')
     BEGIN
         INSERT INTO dbo.books (title, author, description, price, category, isbn, quantity, image_url, admin_id, rating)
-        VALUES (N'Salt, Fat, Acid, Heat', N'Samin Nosrat', N'A practical guide to better cooking.', 18.75, N'Cooking', N'9781452162560', 10, N'https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=400', @seedAdminId, 4.7);
+        VALUES (N'Salt, Fat, Acid, Heat', N'Samin Nosrat', N'A practical guide to better cooking.', 187000, N'Cooking', N'9781452162560', 10, N'https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=400', @seedAdminId, 4.7);
     END;
 
     IF NOT EXISTS (SELECT 1 FROM dbo.books WHERE isbn = N'9780140449266')
     BEGIN
         INSERT INTO dbo.books (title, author, description, price, category, isbn, quantity, image_url, admin_id, rating)
-        VALUES (N'The Odyssey', N'Homer', N'A cornerstone of classic literature.', 8.75, N'Classic', N'9780140449266', 14, N'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=400', @seedAdminId, 4.3);
+        VALUES (N'The Odyssey', N'Homer', N'A cornerstone of classic literature.', 87000, N'Classic', N'9780140449266', 14, N'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=400', @seedAdminId, 4.3);
     END;
 
     IF NOT EXISTS (SELECT 1 FROM dbo.books WHERE isbn = N'9780062457714')
     BEGIN
         INSERT INTO dbo.books (title, author, description, price, category, isbn, quantity, image_url, admin_id, rating)
-        VALUES (N'Deep Work', N'Cal Newport', N'Rules for focused success in a distracted world.', 13.60, N'Self-Help', N'9780062457714', 19, N'https://images.unsplash.com/photo-1495640388908-05fa85288e61?w=400', @seedAdminId, 4.6);
+        VALUES (N'Deep Work', N'Cal Newport', N'Rules for focused success in a distracted world.', 136000, N'Self-Help', N'9780062457714', 19, N'https://images.unsplash.com/photo-1495640388908-05fa85288e61?w=400', @seedAdminId, 4.6);
     END;
 END;
+GO
+
+-- Update only legacy sample rows whose prices still have their original USD figures.
+UPDATE b SET price = sample.vnd_price
+FROM dbo.books b
+JOIN (VALUES
+    (N'9780735211292', 12.99, 129000), (N'9780062315007', 10.50, 105000),
+    (N'9780547928227', 11.99, 119000), (N'9780307476463', 14.20, 142000),
+    (N'9780141034355', 9.90, 99000), (N'9781501128035', 13.40, 134000),
+    (N'9780812981605', 15.00, 150000), (N'9781452162560', 18.75, 187000),
+    (N'9780140449266', 8.75, 87000), (N'9780062457714', 13.60, 136000)
+) AS sample(isbn, old_price, vnd_price)
+    ON b.isbn = sample.isbn AND b.price = sample.old_price;
 GO

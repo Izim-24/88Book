@@ -264,9 +264,90 @@ const createTables = async () => {
 
     await pool.query("UPDATE users SET role = 'buyer' WHERE role NOT IN ('admin', 'buyer')");
 
+    await pool.query(`
+      IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'CK_books_price' AND parent_object_id = OBJECT_ID('books'))
+        ALTER TABLE books WITH CHECK ADD CONSTRAINT CK_books_price CHECK (price >= 0);
+      IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'CK_books_quantity' AND parent_object_id = OBJECT_ID('books'))
+        ALTER TABLE books WITH CHECK ADD CONSTRAINT CK_books_quantity CHECK (quantity >= 0);
+      IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'CK_cart_items_quantity' AND parent_object_id = OBJECT_ID('cart_items'))
+        ALTER TABLE cart_items WITH CHECK ADD CONSTRAINT CK_cart_items_quantity CHECK (quantity > 0);
+      IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'CK_order_items_quantity' AND parent_object_id = OBJECT_ID('order_items'))
+        ALTER TABLE order_items WITH CHECK ADD CONSTRAINT CK_order_items_quantity CHECK (quantity > 0);
+      IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'CK_orders_total_amount' AND parent_object_id = OBJECT_ID('orders'))
+        ALTER TABLE orders WITH CHECK ADD CONSTRAINT CK_orders_total_amount CHECK (total_amount >= 0);
+    `);
+
+    await pool.query(`
+      IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_cart_items_user_book' AND object_id = OBJECT_ID('cart_items'))
+        CREATE INDEX IX_cart_items_user_book ON cart_items(user_id, book_id);
+    `);
+
+    // Columns and tables that used to require separate migration scripts.
+    await pool.query(`
+      IF COL_LENGTH('books', 'rating') IS NULL
+        ALTER TABLE books ADD rating DECIMAL(3, 1) DEFAULT 4.5;
+    `);
+
+    await pool.query(`
+      IF OBJECT_ID('user_addresses', 'U') IS NULL
+      BEGIN
+        CREATE TABLE user_addresses (
+          id INT IDENTITY(1,1) PRIMARY KEY,
+          user_id INT NOT NULL,
+          label NVARCHAR(100),
+          name NVARCHAR(255) NOT NULL,
+          street NVARCHAR(MAX) NOT NULL,
+          city NVARCHAR(100) NOT NULL,
+          state NVARCHAR(100) NOT NULL,
+          zip_code NVARCHAR(50) NOT NULL,
+          country NVARCHAR(100) NOT NULL,
+          is_default BIT DEFAULT 0,
+          created_at DATETIME DEFAULT GETDATE(),
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+      END
+    `);
+
+    await pool.query(`
+      IF OBJECT_ID('wishlists', 'U') IS NULL
+      BEGIN
+        CREATE TABLE wishlists (
+          id INT IDENTITY(1,1) PRIMARY KEY,
+          user_id INT NOT NULL,
+          book_id INT NOT NULL,
+          created_at DATETIME DEFAULT GETDATE(),
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+          FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE,
+          UNIQUE (user_id, book_id)
+        );
+      END
+    `);
+
+    // Convert only untouched legacy sample prices that were stored as USD figures.
+    await pool.query(`
+      UPDATE b SET price = sample.vnd_price
+      FROM books b
+      JOIN (VALUES
+        ('9780735211292', 12.99, 129000),
+        ('9780062315007', 10.50, 105000),
+        ('9780547928227', 11.99, 119000),
+        ('9780307476463', 14.20, 142000),
+        ('9780141034355', 9.90, 99000),
+        ('9781501128035', 13.40, 134000),
+        ('9780812981605', 15.00, 150000),
+        ('9781452162560', 18.75, 187000),
+        ('9780140449266', 8.75, 87000),
+        ('9780062457714', 13.60, 136000)
+      ) AS sample(isbn, old_price, vnd_price)
+        ON b.isbn = sample.isbn AND b.price = sample.old_price;
+    `);
+
+    console.log("✅ Migration finished");
   } catch (error) {
     console.error("❌ Error creating tables:", error);
-    process.exit(1);
+    process.exitCode = 1;
+  } finally {
+    await pool.close();
   }
 };
 

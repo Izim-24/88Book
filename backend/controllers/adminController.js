@@ -1,6 +1,15 @@
 import pool from "../config/database.js";
 import bcrypt from "bcryptjs";
 import { ORDER_STATUSES } from "../constants/orderStatus.js";
+import { OrderTransitionError, transitionOrder } from "../services/orderLifecycle.js";
+import {
+  cleanText,
+  isForeignKeyViolation,
+  isValidEmail,
+  normalizeEmail,
+  passwordProblem,
+  toPositiveInt,
+} from "../utils/validation.js";
 
 const editableRoles = ["admin", "buyer"];
 
@@ -40,13 +49,24 @@ export const getAdminUsers = async (req, res) => {
 
 export const createAdminUser = async (req, res) => {
   try {
-    const { email, password, fullName, role = "buyer" } = req.body;
+    const email = normalizeEmail(req.body?.email);
+    const fullName = cleanText(req.body?.fullName, 255);
+    const { password, role = "buyer" } = req.body || {};
 
     if (!email || !password || !fullName) {
       return res.status(400).json({
         success: false,
         message: "Email, password, and full name are required",
       });
+    }
+
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ success: false, message: "Invalid email format" });
+    }
+
+    const problem = passwordProblem(password);
+    if (problem) {
+      return res.status(400).json({ success: false, message: problem });
     }
 
     if (!editableRoles.includes(role)) {
@@ -66,7 +86,7 @@ export const createAdminUser = async (req, res) => {
       });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 12);
     const result = await pool.query(
       "INSERT INTO users (email, password, full_name, role) OUTPUT INSERTED.id, INSERTED.email, INSERTED.full_name, INSERTED.role, INSERTED.created_at VALUES ($1, $2, $3, $4)",
       [email, hashedPassword, fullName, role],
@@ -88,8 +108,22 @@ export const createAdminUser = async (req, res) => {
 
 export const updateAdminUser = async (req, res) => {
   try {
-    const { userId } = req.params;
-    const { email, fullName, role, password } = req.body;
+    const userId = toPositiveInt(req.params.userId);
+    if (!userId) return res.status(400).json({ success: false, message: "Invalid user ID" });
+    const email = req.body?.email ? normalizeEmail(req.body.email) : null;
+    const fullName = req.body?.fullName ? cleanText(req.body.fullName, 255) : null;
+    const { role, password } = req.body || {};
+
+    if (email && !isValidEmail(email)) {
+      return res.status(400).json({ success: false, message: "Invalid email format" });
+    }
+    if (fullName === undefined) {
+      return res.status(400).json({ success: false, message: "Full name is too long" });
+    }
+    if (password) {
+      const problem = passwordProblem(password);
+      if (problem) return res.status(400).json({ success: false, message: problem });
+    }
 
     if (role && !editableRoles.includes(role)) {
       return res.status(400).json({
@@ -118,7 +152,7 @@ export const updateAdminUser = async (req, res) => {
       }
     }
 
-    const hashedPassword = password ? await bcrypt.hash(password, 10) : null;
+    const hashedPassword = password ? await bcrypt.hash(password, 12) : null;
     const result = await pool.query(
       `UPDATE users
        SET email = COALESCE($1, email),
@@ -154,24 +188,44 @@ export const updateAdminUser = async (req, res) => {
 
 export const deleteAdminUser = async (req, res) => {
   try {
-    const { userId } = req.params;
+    const userId = toPositiveInt(req.params.userId);
+    if (!userId) return res.status(400).json({ success: false, message: "Invalid user ID" });
 
-    if (Number(userId) === Number(req.user.userId)) {
+    if (userId === Number(req.user.userId)) {
       return res.status(400).json({
         success: false,
         message: "You cannot delete your own account",
       });
     }
 
-    const result = await pool.query(
-      "DELETE FROM users OUTPUT DELETED.id WHERE id = $1",
-      [userId],
-    );
+    const outcome = await pool.withTransaction(async (query) => {
+      const user = await query("SELECT id FROM users WITH (UPDLOCK) WHERE id = $1", [userId]);
+      if (user.rows.length === 0) return "missing";
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({
+      // Orders and catalog books are business records and must be kept.
+      const linked = await query(
+        `SELECT
+           (SELECT COUNT(*) FROM orders WHERE user_id = $1) AS orders,
+           (SELECT COUNT(*) FROM books WHERE admin_id = $1) AS books`,
+        [userId],
+      );
+      if (Number(linked.rows[0].orders) > 0 || Number(linked.rows[0].books) > 0) {
+        return "linked";
+      }
+
+      // cart_items has no ON DELETE CASCADE; addresses, wishlists and history do.
+      await query("DELETE FROM cart_items WHERE user_id = $1", [userId]);
+      await query("DELETE FROM users WHERE id = $1", [userId]);
+      return "deleted";
+    });
+
+    if (outcome === "missing") {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+    if (outcome === "linked") {
+      return res.status(409).json({
         success: false,
-        message: "User not found",
+        message: "This user has orders or owns catalog books, so the account cannot be deleted.",
       });
     }
 
@@ -181,9 +235,11 @@ export const deleteAdminUser = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({
+    res.status(isForeignKeyViolation(error) ? 409 : 500).json({
       success: false,
-      message: "Error deleting user. Remove related orders, cart items, addresses, or wishlist records first.",
+      message: isForeignKeyViolation(error)
+        ? "This user is still referenced by other records and cannot be deleted."
+        : "Error deleting user",
     });
   }
 };
@@ -235,9 +291,8 @@ export const updateUserRole = async (req, res) => {
 
 export const getAdminBooks = async (req, res) => {
   try {
-    const { page = 1, limit = 20 } = req.query;
-    const pageNumber = Number(page);
-    const pageSize = Number(limit);
+    const pageNumber = toPositiveInt(req.query.page) || 1;
+    const pageSize = Math.min(toPositiveInt(req.query.limit) || 20, 200);
     const offset = (pageNumber - 1) * pageSize;
 
     const result = await pool.query(
@@ -306,14 +361,17 @@ export const updateRecommendations = async (req, res) => {
       .slice(0, 6);
 
     await ensureRecommendationsTable();
-    await pool.query("DELETE FROM recommendations");
-
-    for (const [index, bookId] of uniqueBookIds.entries()) {
-      await pool.query(
-        "INSERT INTO recommendations (book_id, sort_order) VALUES ($1, $2)",
-        [bookId, index],
-      );
-    }
+    // Replace the list atomically so a bad book ID never leaves it half-empty.
+    await pool.withTransaction(async (query) => {
+      await query("DELETE FROM recommendations");
+      for (const [index, bookId] of uniqueBookIds.entries()) {
+        await query(
+          `INSERT INTO recommendations (book_id, sort_order)
+           SELECT $1, $2 WHERE EXISTS (SELECT 1 FROM books WHERE id = $1)`,
+          [bookId, index],
+        );
+      }
+    });
 
     const result = await pool.query(
       `SELECT b.*, sp.sort_order
@@ -343,9 +401,7 @@ export const getAdminOrders = async (req, res) => {
         o.id, o.user_id, o.total_amount, o.status, o.created_at,
         u.full_name, u.email
        FROM orders o
-       JOIN order_items oi ON o.id = oi.order_id
        JOIN users u ON o.user_id = u.id
-       GROUP BY o.id, o.user_id, o.total_amount, o.status, o.created_at, u.full_name, u.email
        ORDER BY o.created_at DESC`,
     );
 
@@ -387,7 +443,7 @@ export const getAdminOrders = async (req, res) => {
 export const updateOrderStatus = async (req, res) => {
   try {
     const { orderId } = req.params;
-    const { status } = req.body;
+    const { status } = req.body || {};
 
     if (!ORDER_STATUSES.includes(status)) {
       return res.status(400).json({
@@ -396,21 +452,18 @@ export const updateOrderStatus = async (req, res) => {
       });
     }
 
-    const result = await pool.query(
-      "UPDATE orders SET status = $1, updated_at = GETDATE() OUTPUT INSERTED.* WHERE id = $2",
-      [status, orderId],
-    );
+    const order = await transitionOrder(orderId, status);
 
     res.json({
       success: true,
       message: "Order status updated",
-      order: result.rows[0],
+      order,
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({
+    res.status(error instanceof OrderTransitionError ? error.status : 500).json({
       success: false,
-      message: "Error updating order status",
+      message: error instanceof OrderTransitionError ? error.message : "Error updating order status",
     });
   }
 };
@@ -422,16 +475,15 @@ export const getAdminStats = async (req, res) => {
     );
 
     const ordersResult = await pool.query(
-      `SELECT COUNT(*) as total_orders, SUM(o.total_amount) as total_revenue
-       FROM order_items oi
-       JOIN orders o ON oi.order_id = o.id`,
+      `SELECT COUNT(*) as total_orders,
+              COALESCE(SUM(CASE WHEN status = 'delivered' THEN total_amount ELSE 0 END), 0) as total_revenue
+       FROM orders`,
     );
 
     const recentResult = await pool.query(
       `SELECT COUNT(*) as recent_orders
-       FROM order_items oi
-       JOIN orders o ON oi.order_id = o.id
-       WHERE o.created_at >= DATEADD(day, -30, GETDATE())`,
+       FROM orders
+       WHERE created_at >= DATEADD(day, -30, GETDATE())`,
     );
 
     res.json({

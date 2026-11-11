@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
+import pool from "./config/database.js";
 
 // Load environment variables
 dotenv.config();
@@ -11,6 +12,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const app = express();
+app.disable("x-powered-by");
 const PORT = process.env.PORT || 5000;
 const allowedOrigins = new Set([
   process.env.FRONTEND_URL || "http://localhost:5174",
@@ -19,6 +21,12 @@ const allowedOrigins = new Set([
 ]);
 
 // Middleware
+app.use((req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("X-Frame-Options", "DENY");
+  next();
+});
 app.use(
   cors({
     origin: (origin, callback) =>
@@ -26,8 +34,8 @@ app.use(
     credentials: true,
   }),
 );
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: "1mb" }));
+app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 
 // Serve static files (book cover images)
 app.use("/uploads", express.static(`${__dirname}/uploads`));
@@ -38,6 +46,15 @@ app.get("/api/health", (req, res) => {
     status: "Server is running",
     timestamp: new Date().toISOString(),
   });
+});
+
+app.get("/api/health/db", async (_req, res) => {
+  try {
+    await pool.query("SELECT 1 AS ready");
+    res.json({ status: "ready" });
+  } catch {
+    res.status(503).json({ status: "database unavailable" });
+  }
 });
 
 // Import routes
@@ -62,11 +79,19 @@ app.use("/api/chat", chatRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
+  if (err.type === "entity.parse.failed") {
+    return res.status(400).json({ success: false, message: "Request body is not valid JSON" });
+  }
+  if (err.type === "entity.too.large") {
+    return res.status(413).json({ success: false, message: "Request body is too large" });
+  }
   console.error(err.stack);
-  res.status(err.status || 500).json({
+  const status = err.status || err.statusCode || 500;
+  const isDev = process.env.NODE_ENV === "development";
+  res.status(status).json({
     success: false,
-    message: err.message || "Internal server error",
-    error: process.env.NODE_ENV === "development" ? err : {},
+    message: status < 500 || isDev ? err.message || "Request failed" : "Internal server error",
+    ...(isDev ? { error: err.message } : {}),
   });
 });
 

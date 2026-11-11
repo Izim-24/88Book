@@ -56,6 +56,7 @@ function AppContent() {
   const [books, setBooks] = useState<Book[]>([]);
   const [recommendations, setRecommendations] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
+  const [notice, setNotice] = useState("");
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [imageSearchOpen, setImageSearchOpen] = useState(false);
@@ -70,6 +71,12 @@ function AppContent() {
   const [aiAnchorBook, setAIAnchorBook] = useState(null);
   const [alsoBoughtBooks, setAlsoBoughtBooks] = useState<Book[]>([]);
   const lastRecordedSearch = useRef("");
+
+  useEffect(() => {
+    if (!notice) return;
+    const timer = window.setTimeout(() => setNotice(""), 4000);
+    return () => window.clearTimeout(timer);
+  }, [notice]);
 
   const { user, isAuthenticated, logout, login, register } = useAuth();
   const {
@@ -103,9 +110,9 @@ function AppContent() {
       email: profile.email,
     });
     if (res.success) {
-      alert("Profile updated successfully!");
+      setNotice("Profile updated successfully.");
     } else {
-      alert(res.message || "Failed to update profile");
+      setNotice(res.message || "Failed to update profile.");
     }
   };
 
@@ -194,7 +201,7 @@ function AppContent() {
         setLoading(true);
         const response = await booksAPI.getAll(
           1,
-          50,
+          100,
           "",
           selectedCategory !== "All" ? selectedCategory : "",
         );
@@ -326,14 +333,16 @@ function AppContent() {
 
   const handleAddToCart = async (book: Book) => {
     if (!isAuthenticated) {
-      alert("Please login to add items to cart");
+      setNotice("Sign in to add books to your cart.");
       handleNavigate("account");
       return;
     }
     const result = await addItem(book.id, 1);
     if (result.success) {
-      alert("Item added to cart!");
+      setNotice("Book added to cart.");
       loadPersonalizedRecommendations();
+    } else {
+      setNotice(result.message || "Could not add the book to your cart.");
     }
   };
 
@@ -341,26 +350,29 @@ function AppContent() {
     if (newQuantity <= 0) {
       const item = cartItems.find((i: any) => i.book_id === parseInt(bookId));
       if (item) {
-        await removeItem(item.id);
+        const result = await removeItem(item.id);
+        if (!result.success) setNotice(result.message);
       }
       return;
     }
     const item = cartItems.find((i: any) => i.book_id === parseInt(bookId));
     if (item) {
-      await updateItem(item.id, newQuantity);
+      const result = await updateItem(item.id, newQuantity);
+      if (!result.success) setNotice(result.message);
     }
   };
 
   const handleRemoveItem = async (bookId: string) => {
     const item = cartItems.find((i: any) => i.book_id === parseInt(bookId));
     if (item) {
-      await removeItem(item.id);
+      const result = await removeItem(item.id);
+      if (!result.success) setNotice(result.message);
     }
   };
 
   const handleCheckout = () => {
     if (!isAuthenticated) {
-      alert("Please login to checkout");
+      setNotice("Sign in to check out.");
       handleNavigate("account");
       return;
     }
@@ -380,6 +392,15 @@ function AppContent() {
     loadPersonalizedRecommendations();
   };
 
+  const handleCancelOrder = async (orderId: string) => {
+    const result = await ordersAPI.cancel(orderId);
+    if (result.success) {
+      await refreshOrders();
+      setNotice("Order cancelled.");
+    }
+    return result;
+  };
+
   const handleLogout = () => {
     resetCart();
     logout();
@@ -391,7 +412,7 @@ function AppContent() {
     if (res.success) {
       setAddresses((prev) => [res.address, ...prev]);
     } else {
-      alert("Failed to add address");
+      setNotice(res.message || "Failed to add address.");
     }
   };
 
@@ -402,7 +423,7 @@ function AppContent() {
         prev.map((a) => (a.id === updatedAddress.id ? res.address : a)),
       );
     } else {
-      alert("Failed to update address");
+      setNotice(res.message || "Failed to update address.");
     }
   };
 
@@ -411,13 +432,13 @@ function AppContent() {
     if (res.success) {
       setAddresses((prev) => prev.filter((a) => a.id !== id));
     } else {
-      alert("Failed to delete address");
+      setNotice(res.message || "Failed to delete address.");
     }
   };
 
   const handleToggleWishlist = async (book: Book) => {
     if (!isAuthenticated) {
-      alert("Please login to use wishlist");
+      setNotice("Sign in to use your wishlist.");
       handleNavigate("account");
       return;
     }
@@ -521,6 +542,13 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-background">
+      <a href="#main-content" className="skip-link">Skip to content</a>
+      {notice && (
+        <div role="status" aria-live="polite" className="app-notice">
+          {notice}
+          <button type="button" onClick={() => setNotice("")} aria-label="Dismiss notification">×</button>
+        </div>
+      )}
       <Navigation
         cartItemCount={cartItemCount}
         onNavigate={handleNavigate}
@@ -535,6 +563,7 @@ function AppContent() {
         searchSuggestions={searchSuggestions}
       />
 
+      <div id="main-content" tabIndex={-1}>
       {currentPage === "home" && (
         <main>
           {/* Hero Section */}
@@ -674,7 +703,7 @@ function AppContent() {
                 Recommendations
               </h2>
               <p className="text-muted-foreground mb-8">
-                Handpicked titles from BookHaven's favorite reads.
+                Handpicked titles from 88Book's favorite reads.
               </p>
               {displayedRecommendations.length === 0 ? (
                 <p className="text-muted-foreground">
@@ -878,10 +907,6 @@ function AppContent() {
             price: item.price,
             quantity: item.quantity,
           }))}
-          total={cartItems.reduce(
-            (sum: number, item: any) => sum + item.price * item.quantity,
-            0,
-          )}
           onOrderPlaced={handleOrderPlaced}
           onOrderComplete={handleOrderComplete}
           onCancel={() => handleNavigate("cart")}
@@ -902,6 +927,7 @@ function AppContent() {
           onRemoveFromWishlist={(bookId) =>
             handleToggleWishlist({ id: bookId } as any)
           }
+          onCancelOrder={handleCancelOrder}
           onLogout={handleLogout}
           onChangePassword={usersAPI.changePassword}
           onLogin={login}
@@ -912,6 +938,7 @@ function AppContent() {
       {currentPage === "admin" && user?.role === "admin" && (
         <AdminDashboard currentUserId={user?.id} />
       )}
+      </div>
 
       <BookDetailsModal
         book={selectedBook}

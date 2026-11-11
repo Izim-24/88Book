@@ -6,6 +6,10 @@
 - Backend: REST API viết bằng Node.js + Express.
 - Database: SQL Server, lưu tài khoản, sách, giỏ hàng, đơn hàng, địa chỉ và wishlist.
 
+Sơ đồ và luồng đúng với code hiện tại nằm ở [docs/88book-current-system.md](docs/88book-current-system.md). Mô hình UML có thể import vào Visual Paradigm nằm ở [docs/88book-current-system.xmi](docs/88book-current-system.xmi). Bộ `docs/design/` là thiết kế mở rộng cho tương lai, chưa phải toàn bộ chức năng đang chạy.
+
+Checkout hiện hỗ trợ thanh toán khi nhận hàng. Phí vận chuyển là 30.000 ₫, miễn phí khi tạm tính đạt 1.000.000 ₫; thuế hiển thị là 8%. Tổng đơn do backend tính từ giá trong database. Ứng dụng hiện chưa tích hợp cổng thanh toán hoặc hãng vận chuyển.
+
 Frontend gọi API qua `http://localhost:5000/api`. Backend kết nối SQL Server qua cấu hình trong `backend/.env`.
 
 ## Công nghệ sử dụng
@@ -62,7 +66,7 @@ Database:
 - `database/`: SQL script và migration.
 - `dist/`: frontend build output, được tạo sau khi chạy `npm run build`.
 - `node_modules/`: dependency đã cài local, không nên commit lên git.
-- `docker-compose.yml`: cấu hình chạy SQL Server và backend bằng Docker nếu máy có Docker.
+- `docker-compose.yml`: cấu hình chạy SQL Server và backend bằng Docker nếu máy có Docker. Backend được build từ thư mục gốc (`docker compose up --build`) để có cả thư mục `shared/`.
 
 ## Cấu trúc frontend
 
@@ -172,9 +176,9 @@ database/
 Ý nghĩa:
 
 - `database/init.sql`: script SQL tổng hợp để tạo database/table và seed data. Có thể dùng trong SSMS nếu muốn chạy SQL thủ công.
-- `database/migrations/run.js`: migration chính, tạo các bảng quan trọng cho app.
-- `database/migrations/add-rating-column.js`: migration bổ sung cột `rating` cho bảng `books`.
-- `database/migrations/add_wishlist_address.js`: migration bổ sung bảng `user_addresses` và `wishlists`.
+- `database/migrations/run.js`: migration chính (`npm run migrate`), tạo toàn bộ bảng của app, kể cả cột `rating`, bảng `user_addresses` và `wishlists`; chạy lại nhiều lần vẫn an toàn.
+- `database/migrations/add-rating-column.js`: script cũ, nay đã gộp vào `run.js`.
+- `database/migrations/add_wishlist_address.js`: script cũ, nay đã gộp vào `run.js`.
 
 Các bảng chính:
 
@@ -279,14 +283,14 @@ Yêu cầu:
 Cài frontend:
 
 ```powershell
-cd C:\Users\quang\Desktop\88Book-main\88Book-main
+cd 88Book
 npm install
 ```
 
 Cài backend:
 
 ```powershell
-cd C:\Users\quang\Desktop\88Book-main\88Book-main\backend
+cd 88Book\backend
 npm install
 ```
 
@@ -353,9 +357,13 @@ CREATE DATABASE book_store;
 Sau đó chạy migration:
 
 ```powershell
-cd C:\Users\quang\Desktop\88Book-main\88Book-main\backend
+cd 88Book\backend
 npm run migrate
 ```
+
+Tạo tài khoản quản trị đầu tiên bằng cách đặt `BOOTSTRAP_ADMIN_EMAIL` và `BOOTSTRAP_ADMIN_PASSWORD` (ít nhất 12 ký tự) trong `backend/.env`, rồi chạy `npm run bootstrap-admin` trong `backend/`. Xóa hai biến mật khẩu này khỏi `.env` sau khi tạo xong. `database/init.sql` không còn tạo tài khoản demo với mật khẩu công khai. Nếu cần dữ liệu sách mẫu từ `init.sql`, chạy script đó sau khi đã có tài khoản admin.
+
+Migration cũng chuyển mật khẩu tài khoản cũ đang lưu dạng văn bản sang bcrypt. Hai tài khoản demo cũ không được phép đăng nhập khi `NODE_ENV=production`; hãy tạo admin riêng bằng lệnh trên trước khi triển khai.
 
 Kiểm tra SQL Server có mở port chưa:
 
@@ -370,7 +378,7 @@ Nếu `TcpTestSucceeded : True` là backend có thể kết nối tới SQL Serv
 Chạy backend:
 
 ```powershell
-cd C:\Users\quang\Desktop\88Book-main\88Book-main\backend
+cd 88Book\backend
 npm run dev
 ```
 
@@ -389,7 +397,7 @@ curl http://localhost:5000/api/health
 Chạy frontend:
 
 ```powershell
-cd C:\Users\quang\Desktop\88Book-main\88Book-main
+cd 88Book
 npm run dev
 ```
 

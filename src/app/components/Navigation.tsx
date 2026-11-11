@@ -54,12 +54,12 @@ export function Navigation({
   return (
     <nav className="sticky top-0 z-50 bg-background/85 backdrop-blur-xl border-b border-border">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 gap-4">
-          <div className="flex items-center gap-8">
+        <div className="flex items-center justify-between h-16 gap-2 sm:gap-4">
+          <div className="flex items-center gap-4 lg:gap-8">
             {canGoBack && onGoBack && (
               <button
                 onClick={onGoBack}
-                className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                className="hidden sm:inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
                 aria-label="Go back"
                 title="Go back"
               >
@@ -72,12 +72,12 @@ export function Navigation({
               className="flex items-center gap-2 hover:opacity-70 transition-opacity"
             >
               <BookOpen className="w-6 h-6 text-primary" />
-              <span className="font-semibold text-lg text-[#5A3E2B]">BookHaven</span>
+              <span className="font-semibold text-lg text-[#5A3E2B]">88Book</span>
             </button>
 
             <button
               onClick={() => onNavigate("browse")}
-              className={`flex items-center gap-1 hover:text-foreground/80 transition-colors font-medium ${
+              className={`hidden md:flex items-center gap-1 hover:text-foreground/80 transition-colors font-medium ${
                 currentPage === "browse"
                   ? "text-foreground"
                   : "text-muted-foreground"
@@ -124,7 +124,7 @@ export function Navigation({
             )}
           </form>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-1 sm:gap-3">
             <button
               onClick={() => onSearchSubmit?.(query.trim())}
               className="p-2 hover:bg-accent rounded-lg transition-colors"
@@ -132,8 +132,8 @@ export function Navigation({
             >
               <Search className="w-5 h-5" />
             </button>
-            <button type="button" onClick={onOpenVoiceSearch} className="p-2 hover:bg-accent rounded-lg transition-colors" aria-label="Search by voice" title="Search by voice"><Mic className="w-5 h-5" /></button>
-            <button type="button" onClick={onOpenImageSearch} className="p-2 hover:bg-accent rounded-lg transition-colors" aria-label="Search by image" title="Search by image"><Camera className="w-5 h-5" /></button>
+            <button type="button" onClick={onOpenVoiceSearch} className="hidden md:inline-flex p-2 hover:bg-accent rounded-lg transition-colors" aria-label="Search by voice" title="Search by voice"><Mic className="w-5 h-5" /></button>
+            <button type="button" onClick={onOpenImageSearch} className="hidden md:inline-flex p-2 hover:bg-accent rounded-lg transition-colors" aria-label="Search by image" title="Search by image"><Camera className="w-5 h-5" /></button>
             {isLoggedIn && userRole === "admin" && (
               <button
                 onClick={() => onNavigate("admin")}
@@ -169,6 +169,16 @@ export function Navigation({
               )}
             </button>
           </div>
+        </div>
+        <div className="flex md:hidden items-center justify-between h-11 border-t border-border text-sm">
+          {canGoBack && onGoBack ? (
+            <button type="button" onClick={onGoBack} className="inline-flex items-center gap-1 px-2 py-1" aria-label="Go back">
+              <ArrowLeft className="w-4 h-4" /> Back
+            </button>
+          ) : <span />}
+          <button type="button" onClick={() => onNavigate("browse")} className="px-2 py-1 font-medium">Categories</button>
+          <button type="button" onClick={onOpenVoiceSearch} className="p-2" aria-label="Search by voice"><Mic className="w-4 h-4" /></button>
+          <button type="button" onClick={onOpenImageSearch} className="p-2" aria-label="Search by image"><Camera className="w-4 h-4" /></button>
         </div>
       </div>
     </nav>

@@ -106,7 +106,7 @@ export const getCart = async (req, res) => {
       success: true,
       items,
       totalPrice: parseFloat(totalPrice.toFixed(2)),
-      itemCount: items.length,
+      itemCount: items.reduce((sum, item) => sum + item.quantity, 0),
     });
   } catch (error) {
     console.error(error);

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Eye, Trash2, Edit2, Plus, ShieldCheck, Users } from "lucide-react";
+import { Eye, Trash2, Edit2, Plus, ShieldCheck, Users, PackageCheck } from "lucide-react";
 import { formatVND } from "../utils/format";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -45,6 +45,15 @@ interface AdminUser {
   created_at: string;
 }
 
+interface AdminOrder {
+  id: number;
+  full_name: string;
+  email: string;
+  total_amount: number;
+  status: "accepted" | "shipped" | "delivered" | "cancelled";
+  items: Array<{ title: string; quantity: number }>;
+}
+
 interface AdminDashboardProps {
   currentUserId?: number | string;
 }
@@ -62,6 +71,11 @@ export function AdminDashboard({
 }: AdminDashboardProps) {
   const [books, setBooks] = useState<AdminBook[]>([]);
   const [users, setUsers] = useState<AdminUser[]>([]);
+  const [orders, setOrders] = useState<AdminOrder[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [ordersError, setOrdersError] = useState("");
+  const [orderActionId, setOrderActionId] = useState<number | null>(null);
+  const [cancelOrderId, setCancelOrderId] = useState<number | null>(null);
   const [recommendationIds, setRecommendationIds] = useState<number[]>([]);
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [loading, setLoading] = useState(false);
@@ -96,12 +110,36 @@ export function AdminDashboard({
     fetchBooks();
     fetchRecommendations();
     fetchUsers();
+    fetchOrders();
   }, []);
+
+  const fetchOrders = async () => {
+    setOrdersLoading(true);
+    const response = await adminAPI.getOrders();
+    if (response.success) setOrders(response.orders || []);
+    else setOrdersError(response.message || "Could not load orders.");
+    setOrdersLoading(false);
+  };
+
+  const changeOrderStatus = async (orderId: number, status: AdminOrder["status"]) => {
+    setOrderActionId(orderId);
+    setOrdersError("");
+    const response = await adminAPI.updateOrderStatus(orderId, status);
+    if (response.success) {
+      setOrders((current) => current.map((order) =>
+        order.id === orderId ? { ...order, status } : order,
+      ));
+      setCancelOrderId(null);
+    } else {
+      setOrdersError(response.message || "Could not update the order.");
+    }
+    setOrderActionId(null);
+  };
 
   const fetchBooks = async () => {
     try {
       setLoading(true);
-      const response = await adminAPI.getBooks();
+      const response = await adminAPI.getBooks(1, 200);
       if (response.success) {
         setBooks(response.books || []);
       } else {
@@ -688,12 +726,13 @@ export function AdminDashboard({
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="price">Price ($) *</Label>
+                    <Label htmlFor="price">Price (VND) *</Label>
                     <Input
                       id="price"
                       type="number"
-                      placeholder="19.99"
-                      step="0.01"
+                      placeholder="120000"
+                      step="1"
+                      min="1"
                       value={formData.price}
                       onChange={handleInputChange}
                       required
@@ -706,6 +745,8 @@ export function AdminDashboard({
                       id="quantity"
                       type="number"
                       placeholder="10"
+                      min="0"
+                      step="1"
                       value={formData.quantity}
                       onChange={handleInputChange}
                       required
@@ -833,6 +874,49 @@ export function AdminDashboard({
             </Card>
           </div>
         </div>
+
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><PackageCheck className="w-5 h-5" />Orders ({orders.length})</CardTitle>
+            <CardDescription>Ship accepted orders and mark delivered orders. Cancellation restores stock.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {ordersError && <p role="alert" className="mb-4 text-sm text-destructive">{ordersError}</p>}
+            {ordersLoading && <p className="text-muted-foreground">Loading orders...</p>}
+            {!ordersLoading && orders.length === 0 && <p className="text-muted-foreground">No orders yet.</p>}
+            <div className="space-y-3 max-h-[36rem] overflow-y-auto">
+              {orders.map((order) => (
+                <div key={order.id} className="rounded-lg border border-border p-4 space-y-2">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <p className="font-semibold">Order #{order.id} · {order.full_name}</p>
+                      <p className="text-sm text-muted-foreground">{order.email}</p>
+                    </div>
+                    <span className="rounded-full bg-secondary px-3 py-1 text-sm capitalize">{order.status}</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{order.items.map((item) => `${item.title} × ${item.quantity}`).join(", ")}</p>
+                  <p className="font-medium">{formatVND(Number(order.total_amount))}</p>
+                  {order.status === "accepted" && (
+                    <div className="flex flex-wrap gap-2">
+                      <Button size="sm" disabled={orderActionId === order.id} onClick={() => changeOrderStatus(order.id, "shipped")}>Mark shipped</Button>
+                      {cancelOrderId !== order.id ? (
+                        <Button size="sm" variant="outline" disabled={orderActionId === order.id} onClick={() => setCancelOrderId(order.id)}>Cancel order</Button>
+                      ) : (
+                        <>
+                          <Button size="sm" variant="destructive" disabled={orderActionId === order.id} onClick={() => changeOrderStatus(order.id, "cancelled")}>Confirm cancellation</Button>
+                          <Button size="sm" variant="outline" onClick={() => setCancelOrderId(null)}>Keep order</Button>
+                        </>
+                      )}
+                    </div>
+                  )}
+                  {order.status === "shipped" && (
+                    <Button size="sm" disabled={orderActionId === order.id} onClick={() => changeOrderStatus(order.id, "delivered")}>Mark delivered</Button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </main>
   );

@@ -143,7 +143,7 @@ export function AIRecommendations({
             <div>
               <h3 className="text-2xl font-bold mb-2">Sách dành cho bạn</h3>
               <p className="text-muted-foreground max-w-2xl">
-                Đăng nhập để BookHaven ghi nhớ sách bạn mua, tìm kiếm và yêu
+                Đăng nhập để 88Book ghi nhớ sách bạn mua, tìm kiếm và yêu
                 thích, rồi tự động gợi ý các tựa phù hợp hơn.
               </p>
             </div>

@@ -1,4 +1,11 @@
 import pool from "../config/database.js";
+import {
+  cleanText,
+  isUniqueViolation,
+  toNonNegativeInt,
+  toPositiveInt,
+  toPrice,
+} from "../utils/validation.js";
 
 const ensureRecommendationsTable = async () => {
   await pool.query(`
@@ -152,7 +159,8 @@ export const getRecommendations = async (req, res) => {
 
 export const getBookById = async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = toPositiveInt(req.params.id);
+    if (!id) return res.status(400).json({ success: false, message: "Invalid book ID" });
     const result = await pool.query("SELECT * FROM books WHERE id = $1", [id]);
 
     if (result.rows.length === 0) {
@@ -175,59 +183,48 @@ export const getBookById = async (req, res) => {
   }
 };
 
+const parseBookInput = (body = {}) => {
+  const title = cleanText(body.title, 255);
+  const author = cleanText(body.author, 255);
+  const category = cleanText(body.category, 100);
+  const description = cleanText(body.description, 4000);
+  const isbn = cleanText(body.isbn, 20);
+  const imageUrl = cleanText(body.imageUrl ?? body.image_url, 500);
+  const price = toPrice(body.price);
+  const quantity = body.quantity === "" || body.quantity == null ? 0 : toNonNegativeInt(body.quantity);
+
+  if (!title || !author || !category) {
+    return { error: "Title, author, price, and category are required" };
+  }
+  if ([description, isbn, imageUrl].includes(undefined)) {
+    return { error: "Description, ISBN or image URL is too long" };
+  }
+  if (price == null) return { error: "Price must be a positive number" };
+  if (quantity == null) return { error: "Quantity must be a non-negative whole number" };
+
+  return {
+    values: [title, author, description || null, price, category, isbn || null, quantity, imageUrl || null],
+  };
+};
+
+const sendBookWriteError = (res, error, fallback) => {
+  console.error(error);
+  if (isUniqueViolation(error)) {
+    return res.status(409).json({ success: false, message: "A book with this ISBN already exists" });
+  }
+  res.status(500).json({ success: false, message: fallback });
+};
+
 export const createBook = async (req, res) => {
   try {
-    const {
-      title,
-      author,
-      description,
-      price,
-      category,
-      isbn,
-      quantity,
-      imageUrl,
-      image_url,
-    } = req.body;
-    const adminId = req.user.userId;
-
-    if (!title || !author || !price || !category) {
-      return res.status(400).json({
-        success: false,
-        message: "Title, author, price, and category are required",
-      });
-    }
-
-    // Validate price
-    const numPrice = Number(price);
-    if (isNaN(numPrice) || numPrice <= 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Price must be a positive number",
-      });
-    }
-
-    // Validate quantity
-    const numQuantity = Number(quantity) || 0;
-    if (numQuantity < 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Quantity cannot be negative",
-      });
+    const parsed = parseBookInput(req.body);
+    if (parsed.error) {
+      return res.status(400).json({ success: false, message: parsed.error });
     }
 
     const result = await pool.query(
       "INSERT INTO books (title, author, description, price, category, isbn, quantity, image_url, admin_id) OUTPUT INSERTED.* VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
-      [
-        title,
-        author,
-        description,
-        numPrice,
-        category,
-        isbn,
-        numQuantity,
-        imageUrl || image_url,
-        adminId,
-      ],
+      [...parsed.values, req.user.userId],
     );
 
     res.status(201).json({
@@ -236,63 +233,30 @@ export const createBook = async (req, res) => {
       book: result.rows[0],
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      success: false,
-      message: "Error creating book",
-    });
+    sendBookWriteError(res, error, "Error creating book");
   }
 };
 
 export const updateBook = async (req, res) => {
   try {
-    const { id } = req.params;
-    const {
-      title,
-      author,
-      description,
-      price,
-      category,
-      isbn,
-      quantity,
-      imageUrl,
-      image_url,
-    } = req.body;
-    const isAdmin = req.user.role === "admin";
+    const id = toPositiveInt(req.params.id);
+    if (!id) return res.status(400).json({ success: false, message: "Invalid book ID" });
 
+    const parsed = parseBookInput(req.body);
+    if (parsed.error) {
+      return res.status(400).json({ success: false, message: parsed.error });
+    }
+
+    // Routes are admin-only, so admins may edit any book in the catalog.
     const result = await pool.query(
-      `UPDATE books SET title = $1, author = $2, description = $3, price = $4, category = $5, isbn = $6, quantity = $7, image_url = $8, updated_at = GETDATE() OUTPUT INSERTED.* WHERE id = $9${isAdmin ? "" : " AND admin_id = $10"}`,
-      isAdmin
-        ? [
-            title,
-            author,
-            description,
-            price,
-            category,
-            isbn,
-            quantity,
-            imageUrl || image_url,
-            id,
-          ]
-        : [
-            title,
-            author,
-            description,
-            price,
-            category,
-            isbn,
-            quantity,
-            imageUrl || image_url,
-            id,
-            req.user.userId,
-          ],
+      `UPDATE books SET title = $1, author = $2, description = $3, price = $4, category = $5,
+              isbn = $6, quantity = $7, image_url = $8, updated_at = GETDATE()
+       OUTPUT INSERTED.* WHERE id = $9`,
+      [...parsed.values, id],
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "Book not found or unauthorized",
-      });
+      return res.status(404).json({ success: false, message: "Book not found" });
     }
 
     res.json({
@@ -301,28 +265,36 @@ export const updateBook = async (req, res) => {
       book: result.rows[0],
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      success: false,
-      message: "Error updating book",
-    });
+    sendBookWriteError(res, error, "Error updating book");
   }
 };
 
 export const deleteBook = async (req, res) => {
   try {
-    const { id } = req.params;
-    const isAdmin = req.user.role === "admin";
+    const id = toPositiveInt(req.params.id);
+    if (!id) return res.status(400).json({ success: false, message: "Invalid book ID" });
 
-    const result = await pool.query(
-      `DELETE FROM books OUTPUT DELETED.id WHERE id = $1${isAdmin ? "" : " AND admin_id = $2"}`,
-      isAdmin ? [id] : [id, req.user.userId],
-    );
+    const outcome = await pool.withTransaction(async (query) => {
+      const book = await query("SELECT id FROM books WITH (UPDLOCK) WHERE id = $1", [id]);
+      if (book.rows.length === 0) return "missing";
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({
+      const ordered = await query("SELECT TOP 1 id FROM order_items WHERE book_id = $1", [id]);
+      if (ordered.rows.length > 0) return "ordered";
+
+      // Cart rows have no ON DELETE CASCADE, so remove them explicitly.
+      await query("DELETE FROM cart_items WHERE book_id = $1", [id]);
+      await query("DELETE FROM wishlists WHERE book_id = $1", [id]);
+      await query("DELETE FROM books WHERE id = $1", [id]);
+      return "deleted";
+    });
+
+    if (outcome === "missing") {
+      return res.status(404).json({ success: false, message: "Book not found" });
+    }
+    if (outcome === "ordered") {
+      return res.status(409).json({
         success: false,
-        message: "Book not found or unauthorized",
+        message: "This book appears in existing orders and cannot be deleted. Set its quantity to 0 to stop selling it.",
       });
     }
 

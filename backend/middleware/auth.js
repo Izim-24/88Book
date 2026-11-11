@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import pool from "../config/database.js";
 
 export const authenticateToken = (req, res, next) => {
   if (!process.env.JWT_SECRET) {
@@ -48,7 +49,7 @@ export const identifyOptionalUser = (req, _res, next) => {
 };
 
 export const authorizeRole = (...roles) => {
-  return (req, res, next) => {
+  return async (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({
         success: false,
@@ -56,13 +57,20 @@ export const authorizeRole = (...roles) => {
       });
     }
 
-    if (!roles.includes(req.user.role)) {
-      return res.status(403).json({
-        success: false,
-        message: "Unauthorized access",
-      });
+    try {
+      const result = await pool.query("SELECT role FROM users WHERE id = $1", [req.user.userId]);
+      const currentRole = result.rows[0]?.role;
+      if (!currentRole || !roles.includes(currentRole)) {
+        return res.status(403).json({
+          success: false,
+          message: "Unauthorized access",
+        });
+      }
+      req.user.role = currentRole;
+      next();
+    } catch (error) {
+      console.error("Role lookup failed:", error);
+      res.status(503).json({ success: false, message: "Authorization is temporarily unavailable" });
     }
-
-    next();
   };
 };

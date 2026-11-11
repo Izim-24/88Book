@@ -36,8 +36,10 @@ export const CartProvider = ({ children }) => {
         setCartItems(response.items);
         setTotalPrice(response.totalPrice);
         setItemCount(response.itemCount);
-      } else if (response.message?.toLowerCase().includes("token")) {
-        resetCart();
+        setError(null);
+      } else {
+        setError(response.message || "Failed to load cart");
+        if (response.message?.toLowerCase().includes("token")) resetCart();
       }
     } catch (err) {
       console.error("Error fetching cart:", err);
@@ -54,6 +56,9 @@ export const CartProvider = ({ children }) => {
         await fetchCart();
         return { success: true };
       }
+      const message = response.message || "Failed to add item";
+      setError(message);
+      return { success: false, message };
     } catch (err) {
       const message = err.message || "Failed to add item";
       setError(message);
@@ -69,6 +74,9 @@ export const CartProvider = ({ children }) => {
         await fetchCart();
         return { success: true };
       }
+      const message = response.message || "Failed to update item";
+      setError(message);
+      return { success: false, message };
     } catch (err) {
       const message = err.message || "Failed to update item";
       setError(message);
@@ -84,6 +92,9 @@ export const CartProvider = ({ children }) => {
         await fetchCart();
         return { success: true };
       }
+      const message = response.message || "Failed to remove item";
+      setError(message);
+      return { success: false, message };
     } catch (err) {
       const message = err.message || "Failed to remove item";
       setError(message);
@@ -101,6 +112,9 @@ export const CartProvider = ({ children }) => {
         setItemCount(0);
         return { success: true };
       }
+      const message = response.message || "Failed to clear cart";
+      setError(message);
+      return { success: false, message };
     } catch (err) {
       const message = err.message || "Failed to clear cart";
       setError(message);

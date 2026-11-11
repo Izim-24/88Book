@@ -1,12 +1,17 @@
 import pool from "../config/database.js";
 import {
-  CANCELLABLE_ORDER_STATUSES,
   ORDER_STATUS,
   ORDER_STATUSES,
 } from "../constants/orderStatus.js";
+import { calculateOrderTotals } from "../../shared/orderPricing.js";
+import { OrderTransitionError, transitionOrder } from "../services/orderLifecycle.js";
 
-const TAX_RATE = 0.08;
-const SHIPPING_FEE = 5.99;
+class CheckoutError extends Error {
+  constructor(message, status = 400) {
+    super(message);
+    this.status = status;
+  }
+}
 
 const getOrderItems = async (orderId) => {
   const itemsResult = await pool.query(
@@ -28,68 +33,58 @@ const getOrderItems = async (orderId) => {
 export const createOrder = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const { shippingAddress, paymentMethod } = req.body;
+    const { shippingAddress, paymentMethod } = req.body || {};
 
-    if (!shippingAddress || !paymentMethod) {
+    if (typeof shippingAddress !== "string" ||
+        !shippingAddress.trim() || shippingAddress.length > 1000 ||
+        paymentMethod !== "cash_on_delivery") {
       return res.status(400).json({
         success: false,
-        message: "Shipping address and payment method are required",
+        message: "A valid shipping address and pay-on-delivery method are required",
       });
     }
 
-    // Get cart items
-    const cartResult = await pool.query(
-      `SELECT ci.book_id, ci.quantity, b.price, b.admin_id
-       FROM cart_items ci
-       JOIN books b ON ci.book_id = b.id
-       WHERE ci.user_id = $1`,
-      [userId],
-    );
+    const order = await pool.withTransaction(async (query) => {
+      const cartResult = await query(
+        `SELECT ci.book_id, ci.quantity, b.price, b.admin_id
+         FROM cart_items ci WITH (UPDLOCK, HOLDLOCK)
+         JOIN books b ON ci.book_id = b.id
+         WHERE ci.user_id = $1
+         ORDER BY ci.book_id`,
+        [userId],
+      );
+      const cartItems = cartResult.rows;
+      if (cartItems.length === 0) throw new CheckoutError("Cart is empty");
 
-    if (cartResult.rows.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Cart is empty",
-      });
-    }
-
-    const cartItems = cartResult.rows;
-    const subtotalAmount = cartItems.reduce(
-      (sum, item) => sum + item.quantity * Number(item.price),
-      0,
-    );
-    const taxAmount = subtotalAmount * TAX_RATE;
-    const shippingAmount = cartItems.length > 0 ? SHIPPING_FEE : 0;
-    const totalAmount = subtotalAmount + taxAmount + shippingAmount;
-    const initialStatus = ORDER_STATUS.ACCEPTED;
-
-    // Create order
-    const orderResult = await pool.query(
-      `INSERT INTO orders (user_id, total_amount, status, shipping_address, payment_method)
-       OUTPUT INSERTED.*
-       VALUES ($1, $2, $3, $4, $5)`,
-      [userId, totalAmount, initialStatus, shippingAddress, paymentMethod],
-    );
-
-    const order = orderResult.rows[0];
-
-    // Create order items
-    for (const item of cartItems) {
-      await pool.query(
-        `INSERT INTO order_items (order_id, book_id, quantity, price, admin_id)
+      const { total } = calculateOrderTotals(cartItems);
+      const orderResult = await query(
+        `INSERT INTO orders (user_id, total_amount, status, shipping_address, payment_method)
+         OUTPUT INSERTED.*
          VALUES ($1, $2, $3, $4, $5)`,
-        [order.id, item.book_id, item.quantity, item.price, item.admin_id],
+        [userId, total, ORDER_STATUS.ACCEPTED, shippingAddress.trim(), paymentMethod],
       );
+      const createdOrder = orderResult.rows[0];
 
-      // Reduce book quantity
-      await pool.query(
-        "UPDATE books SET quantity = quantity - $1 WHERE id = $2",
-        [item.quantity, item.book_id],
-      );
-    }
-
-    // Clear cart
-    await pool.query("DELETE FROM cart_items WHERE user_id = $1", [userId]);
+      for (const item of cartItems) {
+        if (!Number.isInteger(item.quantity) || item.quantity <= 0) {
+          throw new CheckoutError("Invalid cart quantity");
+        }
+        const stockUpdate = await query(
+          "UPDATE books SET quantity = quantity - $1 OUTPUT INSERTED.id WHERE id = $2 AND quantity >= $1",
+          [item.quantity, item.book_id],
+        );
+        if (stockUpdate.rows.length !== 1) {
+          throw new CheckoutError(`Book #${item.book_id} is out of stock`, 409);
+        }
+        await query(
+          `INSERT INTO order_items (order_id, book_id, quantity, price, admin_id)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [createdOrder.id, item.book_id, item.quantity, item.price, item.admin_id],
+        );
+      }
+      await query("DELETE FROM cart_items WHERE user_id = $1", [userId]);
+      return createdOrder;
+    });
 
     res.status(201).json({
       success: true,
@@ -103,9 +98,9 @@ export const createOrder = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({
+    res.status(error.status || 500).json({
       success: false,
-      message: "Error creating order",
+      message: error instanceof CheckoutError ? error.message : "Error creating order",
     });
   }
 };
@@ -187,37 +182,7 @@ export const cancelOrder = async (req, res) => {
   try {
     const { orderId } = req.params;
     const userId = req.user.userId;
-
-    const orderResult = await pool.query(
-      "SELECT * FROM orders WHERE id = $1 AND user_id = $2 AND status IN ($3, $4)",
-      [orderId, userId, ...CANCELLABLE_ORDER_STATUSES],
-    );
-
-    if (orderResult.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "Order not found or cannot be cancelled",
-      });
-    }
-
-    // Update order status
-    await pool.query("UPDATE orders SET status = $1 WHERE id = $2", [
-      ORDER_STATUS.CANCELLED,
-      orderId,
-    ]);
-
-    // Restore book quantities
-    const itemsResult = await pool.query(
-      "SELECT book_id, quantity FROM order_items WHERE order_id = $1",
-      [orderId],
-    );
-
-    for (const item of itemsResult.rows) {
-      await pool.query(
-        "UPDATE books SET quantity = quantity + $1 WHERE id = $2",
-        [item.quantity, item.book_id],
-      );
-    }
+    await transitionOrder(orderId, ORDER_STATUS.CANCELLED, userId);
 
     res.json({
       success: true,
@@ -225,9 +190,9 @@ export const cancelOrder = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({
+    res.status(error instanceof OrderTransitionError ? error.status : 500).json({
       success: false,
-      message: "Error cancelling order",
+      message: error instanceof OrderTransitionError ? error.message : "Error cancelling order",
     });
   }
 };
@@ -304,7 +269,7 @@ export const approveOrder = async (req, res) => {
 export const updateOrderStatus = async (req, res) => {
   try {
     const { orderId } = req.params;
-    const { status } = req.body;
+    const { status } = req.body || {};
 
     if (!ORDER_STATUSES.includes(status)) {
       return res.status(400).json({
@@ -313,22 +278,7 @@ export const updateOrderStatus = async (req, res) => {
       });
     }
 
-    const orderResult = await pool.query("SELECT * FROM orders WHERE id = $1", [
-      orderId,
-    ]);
-
-    if (orderResult.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "Order not found",
-      });
-    }
-
-    // Update order status
-    await pool.query(
-      "UPDATE orders SET status = $1, updated_at = GETDATE() WHERE id = $2",
-      [status, orderId],
-    );
+    await transitionOrder(orderId, status);
 
     res.json({
       success: true,
@@ -336,9 +286,9 @@ export const updateOrderStatus = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({
+    res.status(error instanceof OrderTransitionError ? error.status : 500).json({
       success: false,
-      message: "Error updating order status",
+      message: error instanceof OrderTransitionError ? error.message : "Error updating order status",
     });
   }
 };

@@ -20,7 +20,7 @@ const verifyPassword = async (rawPassword, storedPassword) => {
   if (storedPassword?.startsWith?.("$2")) {
     return bcrypt.compare(rawPassword, storedPassword);
   }
-  return rawPassword === storedPassword;
+  return process.env.NODE_ENV !== "production" && rawPassword === storedPassword;
 };
 
 const createToken = (user) => {
@@ -38,9 +38,11 @@ const createToken = (user) => {
 };
 
 const sendAuthError = (res, error, fallbackMessage) => {
-  const status = error.status || 500;
+  const status = [2601, 2627].includes(error.number) ? 409 : error.status || 500;
   const message =
-    status === 500 && process.env.NODE_ENV !== "development"
+    status === 409
+      ? "Email already registered"
+      : status === 500 && process.env.NODE_ENV !== "development"
       ? fallbackMessage
       : error.message || fallbackMessage;
 
@@ -52,10 +54,14 @@ const sendAuthError = (res, error, fallbackMessage) => {
 
 export const registerUser = async (req, res) => {
   try {
-    const { email, password, fullName } = req.body;
+    const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
+    const fullName = typeof req.body?.fullName === "string" ? req.body.fullName.trim() : "";
+    const password = req.body?.password;
 
     // Validate input
-    if (!email || !password || !fullName) {
+    if (!email || typeof password !== "string" || !fullName ||
+        email.length > 255 || fullName.length > 255 ||
+        Buffer.byteLength(password, "utf8") > 72) {
       return res.status(400).json({
         success: false,
         message: "Email, password, and full name are required",
@@ -127,13 +133,19 @@ export const registerUser = async (req, res) => {
 
 export const loginUser = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
+    const password = req.body?.password;
 
-    if (!email || !password) {
+    if (!email || typeof password !== "string" || !password) {
       return res.status(400).json({
         success: false,
         message: "Email and password are required",
       });
+    }
+
+    if (process.env.NODE_ENV === "production" &&
+        ["admin@bookhaven.local", "buyer@bookhaven.local"].includes(email)) {
+      return res.status(403).json({ success: false, message: "Demo accounts are unavailable" });
     }
 
     const result = await pool.query("SELECT * FROM users WHERE email = $1", [
@@ -154,6 +166,12 @@ export const loginUser = async (req, res) => {
         success: false,
         message: "Invalid email or password",
       });
+    }
+
+    // Upgrade local legacy seed accounts from plain text after a successful login.
+    if (!user.password.startsWith("$2")) {
+      const hash = await bcrypt.hash(password, 12);
+      await pool.query("UPDATE users SET password = $1, updated_at = GETDATE() WHERE id = $2", [hash, user.id]);
     }
 
     const token = createToken(user);
@@ -217,14 +235,22 @@ export const createAdminAccount = async (req, res) => {
       });
     }
 
-    const { email, password, fullName } = req.body;
+    const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
+    const fullName = typeof req.body?.fullName === "string" ? req.body.fullName.trim() : "";
+    const password = req.body?.password;
 
     // Validate input
-    if (!email || !password || !fullName) {
+    if (!email || typeof password !== "string" || !fullName ||
+        email.length > 255 || fullName.length > 255 ||
+        Buffer.byteLength(password, "utf8") > 72) {
       return res.status(400).json({
         success: false,
         message: "Email, password, and full name are required",
       });
+    }
+
+    if (!validateEmail(email) || !validatePassword(password).valid) {
+      return res.status(400).json({ success: false, message: "Invalid email or password" });
     }
 
     // Check if user exists

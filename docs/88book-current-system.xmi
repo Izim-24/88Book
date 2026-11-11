@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmi:XMI xmi:version="2.5.1" xmlns:xmi="http://www.omg.org/spec/XMI/20131001" xmlns:uml="http://www.eclipse.org/uml2/5.0.0/UML">
+  <uml:Model xmi:id="model_88book_current" name="88BookCurrentSystem">
+    <packagedElement xmi:type="uml:Package" xmi:id="pkg_types" name="Primitive Types">
+      <packagedElement xmi:type="uml:PrimitiveType" xmi:id="type_int" name="int"/>
+      <packagedElement xmi:type="uml:PrimitiveType" xmi:id="type_string" name="string"/>
+      <packagedElement xmi:type="uml:PrimitiveType" xmi:id="type_real" name="real"/>
+      <packagedElement xmi:type="uml:PrimitiveType" xmi:id="type_date" name="date"/>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Package" xmi:id="pkg_domain" name="SQL Server Entities">
+      <packagedElement xmi:type="uml:Class" xmi:id="class_User" name="User">
+        <ownedAttribute xmi:id="attr_User_id" name="id" type="type_int"/>
+        <ownedAttribute xmi:id="attr_User_email" name="email" type="type_string"/>
+        <ownedAttribute xmi:id="attr_User_password" name="password" type="type_string"/>
+        <ownedAttribute xmi:id="attr_User_full_name" name="full_name" type="type_string"/>
+        <ownedAttribute xmi:id="attr_User_role" name="role" type="type_string"/>
+        <ownedAttribute xmi:id="attr_User_created_at" name="created_at" type="type_date"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Class" xmi:id="class_Book" name="Book">
+        <ownedAttribute xmi:id="attr_Book_id" name="id" type="type_int"/>
+        <ownedAttribute xmi:id="attr_Book_title" name="title" type="type_string"/>
+        <ownedAttribute xmi:id="attr_Book_author" name="author" type="type_string"/>
+        <ownedAttribute xmi:id="attr_Book_description" name="description" type="type_string"/>
+        <ownedAttribute xmi:id="attr_Book_price" name="price" type="type_real"/>
+        <ownedAttribute xmi:id="attr_Book_category" name="category" type="type_string"/>
+        <ownedAttribute xmi:id="attr_Book_isbn" name="isbn" type="type_string"/>
+        <ownedAttribute xmi:id="attr_Book_quantity" name="quantity" type="type_int"/>
+        <ownedAttribute xmi:id="attr_Book_image_url" name="image_url" type="type_string"/>
+        <ownedAttribute xmi:id="attr_Book_admin_id" name="admin_id" type="type_int"/>
+        <ownedAttribute xmi:id="attr_Book_rating" name="rating" type="type_real"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Class" xmi:id="class_CartItem" name="CartItem">
+        <ownedAttribute xmi:id="attr_CartItem_id" name="id" type="type_int"/>
+        <ownedAttribute xmi:id="attr_CartItem_user_id" name="user_id" type="type_int"/>
+        <ownedAttribute xmi:id="attr_CartItem_book_id" name="book_id" type="type_int"/>
+        <ownedAttribute xmi:id="attr_CartItem_quantity" name="quantity" type="type_int"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Class" xmi:id="class_Order" name="Order">
+        <ownedAttribute xmi:id="attr_Order_id" name="id" type="type_int"/>
+        <ownedAttribute xmi:id="attr_Order_user_id" name="user_id" type="type_int"/>
+        <ownedAttribute xmi:id="attr_Order_total_amount" name="total_amount" type="type_real"/>
+        <ownedAttribute xmi:id="attr_Order_status" name="status" type="type_string"/>
+        <ownedAttribute xmi:id="attr_Order_shipping_address" name="shipping_address" type="type_string"/>
+        <ownedAttribute xmi:id="attr_Order_payment_method" name="payment_method" type="type_string"/>
+        <ownedAttribute xmi:id="attr_Order_created_at" name="created_at" type="type_date"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Class" xmi:id="class_OrderItem" name="OrderItem">
+        <ownedAttribute xmi:id="attr_OrderItem_id" name="id" type="type_int"/>
+        <ownedAttribute xmi:id="attr_OrderItem_order_id" name="order_id" type="type_int"/>
+        <ownedAttribute xmi:id="attr_OrderItem_book_id" name="book_id" type="type_int"/>
+        <ownedAttribute xmi:id="attr_OrderItem_admin_id" name="admin_id" type="type_int"/>
+        <ownedAttribute xmi:id="attr_OrderItem_quantity" name="quantity" type="type_int"/>
+        <ownedAttribute xmi:id="attr_OrderItem_price" name="price" type="type_real"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Class" xmi:id="class_UserAddress" name="UserAddress">
+        <ownedAttribute xmi:id="attr_UserAddress_id" name="id" type="type_int"/>
+        <ownedAttribute xmi:id="attr_UserAddress_user_id" name="user_id" type="type_int"/>
+        <ownedAttribute xmi:id="attr_UserAddress_name" name="name" type="type_string"/>
+        <ownedAttribute xmi:id="attr_UserAddress_street" name="street" type="type_string"/>
+        <ownedAttribute xmi:id="attr_UserAddress_city" name="city" type="type_string"/>
+        <ownedAttribute xmi:id="attr_UserAddress_state" name="state" type="type_string"/>
+        <ownedAttribute xmi:id="attr_UserAddress_zip_code" name="zip_code" type="type_string"/>
+        <ownedAttribute xmi:id="attr_UserAddress_country" name="country" type="type_string"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Class" xmi:id="class_Wishlist" name="Wishlist">
+        <ownedAttribute xmi:id="attr_Wishlist_id" name="id" type="type_int"/>
+        <ownedAttribute xmi:id="attr_Wishlist_user_id" name="user_id" type="type_int"/>
+        <ownedAttribute xmi:id="attr_Wishlist_book_id" name="book_id" type="type_int"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Class" xmi:id="class_Recommendation" name="Recommendation">
+        <ownedAttribute xmi:id="attr_Recommendation_id" name="id" type="type_int"/>
+        <ownedAttribute xmi:id="attr_Recommendation_book_id" name="book_id" type="type_int"/>
+        <ownedAttribute xmi:id="attr_Recommendation_sort_order" name="sort_order" type="type_int"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Class" xmi:id="class_BookSearchHistory" name="BookSearchHistory">
+        <ownedAttribute xmi:id="attr_BookSearchHistory_id" name="id" type="type_int"/>
+        <ownedAttribute xmi:id="attr_BookSearchHistory_user_id" name="user_id" type="type_int"/>
+        <ownedAttribute xmi:id="attr_BookSearchHistory_query" name="query" type="type_string"/>
+        <ownedAttribute xmi:id="attr_BookSearchHistory_created_at" name="created_at" type="type_date"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Class" xmi:id="class_VoiceSearchQuery" name="VoiceSearchQuery">
+        <ownedAttribute xmi:id="attr_VoiceSearchQuery_id" name="id" type="type_int"/>
+        <ownedAttribute xmi:id="attr_VoiceSearchQuery_user_id" name="user_id" type="type_int"/>
+        <ownedAttribute xmi:id="attr_VoiceSearchQuery_recognized_text" name="recognized_text" type="type_string"/>
+        <ownedAttribute xmi:id="attr_VoiceSearchQuery_lang" name="lang" type="type_string"/>
+        <ownedAttribute xmi:id="attr_VoiceSearchQuery_created_at" name="created_at" type="type_date"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="association_User_Book" name="administers" memberEnd="association_User_Book_a association_User_Book_b">
+        <ownedEnd xmi:type="uml:Property" xmi:id="association_User_Book_a" type="class_User"><lowerValue xmi:type="uml:LiteralInteger" xmi:id="association_User_Book_a_lower" value="1"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="association_User_Book_a_upper" value="1"/></ownedEnd>
+        <ownedEnd xmi:type="uml:Property" xmi:id="association_User_Book_b" type="class_Book"><lowerValue xmi:type="uml:LiteralInteger" xmi:id="association_User_Book_b_lower" value="0"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="association_User_Book_b_upper" value="-1"/></ownedEnd>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="association_User_CartItem" name="owns" memberEnd="association_User_CartItem_a association_User_CartItem_b">
+        <ownedEnd xmi:type="uml:Property" xmi:id="association_User_CartItem_a" type="class_User"><lowerValue xmi:type="uml:LiteralInteger" xmi:id="association_User_CartItem_a_lower" value="1"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="association_User_CartItem_a_upper" value="1"/></ownedEnd>
+        <ownedEnd xmi:type="uml:Property" xmi:id="association_User_CartItem_b" type="class_CartItem"><lowerValue xmi:type="uml:LiteralInteger" xmi:id="association_User_CartItem_b_lower" value="0"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="association_User_CartItem_b_upper" value="-1"/></ownedEnd>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="association_Book_CartItem" name="selected in" memberEnd="association_Book_CartItem_a association_Book_CartItem_b">
+        <ownedEnd xmi:type="uml:Property" xmi:id="association_Book_CartItem_a" type="class_Book"><lowerValue xmi:type="uml:LiteralInteger" xmi:id="association_Book_CartItem_a_lower" value="1"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="association_Book_CartItem_a_upper" value="1"/></ownedEnd>
+        <ownedEnd xmi:type="uml:Property" xmi:id="association_Book_CartItem_b" type="class_CartItem"><lowerValue xmi:type="uml:LiteralInteger" xmi:id="association_Book_CartItem_b_lower" value="0"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="association_Book_CartItem_b_upper" value="-1"/></ownedEnd>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="association_User_Order" name="places" memberEnd="association_User_Order_a association_User_Order_b">
+        <ownedEnd xmi:type="uml:Property" xmi:id="association_User_Order_a" type="class_User"><lowerValue xmi:type="uml:LiteralInteger" xmi:id="association_User_Order_a_lower" value="1"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="association_User_Order_a_upper" value="1"/></ownedEnd>
+        <ownedEnd xmi:type="uml:Property" xmi:id="association_User_Order_b" type="class_Order"><lowerValue xmi:type="uml:LiteralInteger" xmi:id="association_User_Order_b_lower" value="0"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="association_User_Order_b_upper" value="-1"/></ownedEnd>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="association_Order_OrderItem" name="contains" memberEnd="association_Order_OrderItem_a association_Order_OrderItem_b">
+        <ownedEnd xmi:type="uml:Property" xmi:id="association_Order_OrderItem_a" type="class_Order"><lowerValue xmi:type="uml:LiteralInteger" xmi:id="association_Order_OrderItem_a_lower" value="1"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="association_Order_OrderItem_a_upper" value="1"/></ownedEnd>
+        <ownedEnd xmi:type="uml:Property" xmi:id="association_Order_OrderItem_b" type="class_OrderItem"><lowerValue xmi:type="uml:LiteralInteger" xmi:id="association_Order_OrderItem_b_lower" value="1"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="association_Order_OrderItem_b_upper" value="-1"/></ownedEnd>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="association_Book_OrderItem" name="ordered as" memberEnd="association_Book_OrderItem_a association_Book_OrderItem_b">
+        <ownedEnd xmi:type="uml:Property" xmi:id="association_Book_OrderItem_a" type="class_Book"><lowerValue xmi:type="uml:LiteralInteger" xmi:id="association_Book_OrderItem_a_lower" value="1"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="association_Book_OrderItem_a_upper" value="1"/></ownedEnd>
+        <ownedEnd xmi:type="uml:Property" xmi:id="association_Book_OrderItem_b" type="class_OrderItem"><lowerValue xmi:type="uml:LiteralInteger" xmi:id="association_Book_OrderItem_b_lower" value="0"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="association_Book_OrderItem_b_upper" value="-1"/></ownedEnd>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="association_User_UserAddress" name="saves" memberEnd="association_User_UserAddress_a association_User_UserAddress_b">
+        <ownedEnd xmi:type="uml:Property" xmi:id="association_User_UserAddress_a" type="class_User"><lowerValue xmi:type="uml:LiteralInteger" xmi:id="association_User_UserAddress_a_lower" value="1"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="association_User_UserAddress_a_upper" value="1"/></ownedEnd>
+        <ownedEnd xmi:type="uml:Property" xmi:id="association_User_UserAddress_b" type="class_UserAddress"><lowerValue xmi:type="uml:LiteralInteger" xmi:id="association_User_UserAddress_b_lower" value="0"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="association_User_UserAddress_b_upper" value="-1"/></ownedEnd>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="association_User_Wishlist" name="saves" memberEnd="association_User_Wishlist_a association_User_Wishlist_b">
+        <ownedEnd xmi:type="uml:Property" xmi:id="association_User_Wishlist_a" type="class_User"><lowerValue xmi:type="uml:LiteralInteger" xmi:id="association_User_Wishlist_a_lower" value="1"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="association_User_Wishlist_a_upper" value="1"/></ownedEnd>
+        <ownedEnd xmi:type="uml:Property" xmi:id="association_User_Wishlist_b" type="class_Wishlist"><lowerValue xmi:type="uml:LiteralInteger" xmi:id="association_User_Wishlist_b_lower" value="0"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="association_User_Wishlist_b_upper" value="-1"/></ownedEnd>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="association_Book_Wishlist" name="wishlisted as" memberEnd="association_Book_Wishlist_a association_Book_Wishlist_b">
+        <ownedEnd xmi:type="uml:Property" xmi:id="association_Book_Wishlist_a" type="class_Book"><lowerValue xmi:type="uml:LiteralInteger" xmi:id="association_Book_Wishlist_a_lower" value="1"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="association_Book_Wishlist_a_upper" value="1"/></ownedEnd>
+        <ownedEnd xmi:type="uml:Property" xmi:id="association_Book_Wishlist_b" type="class_Wishlist"><lowerValue xmi:type="uml:LiteralInteger" xmi:id="association_Book_Wishlist_b_lower" value="0"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="association_Book_Wishlist_b_upper" value="-1"/></ownedEnd>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="association_Book_Recommendation" name="featured as" memberEnd="association_Book_Recommendation_a association_Book_Recommendation_b">
+        <ownedEnd xmi:type="uml:Property" xmi:id="association_Book_Recommendation_a" type="class_Book"><lowerValue xmi:type="uml:LiteralInteger" xmi:id="association_Book_Recommendation_a_lower" value="1"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="association_Book_Recommendation_a_upper" value="1"/></ownedEnd>
+        <ownedEnd xmi:type="uml:Property" xmi:id="association_Book_Recommendation_b" type="class_Recommendation"><lowerValue xmi:type="uml:LiteralInteger" xmi:id="association_Book_Recommendation_b_lower" value="0"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="association_Book_Recommendation_b_upper" value="1"/></ownedEnd>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="association_User_BookSearchHistory" name="records" memberEnd="association_User_BookSearchHistory_a association_User_BookSearchHistory_b">
+        <ownedEnd xmi:type="uml:Property" xmi:id="association_User_BookSearchHistory_a" type="class_User"><lowerValue xmi:type="uml:LiteralInteger" xmi:id="association_User_BookSearchHistory_a_lower" value="1"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="association_User_BookSearchHistory_a_upper" value="1"/></ownedEnd>
+        <ownedEnd xmi:type="uml:Property" xmi:id="association_User_BookSearchHistory_b" type="class_BookSearchHistory"><lowerValue xmi:type="uml:LiteralInteger" xmi:id="association_User_BookSearchHistory_b_lower" value="0"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="association_User_BookSearchHistory_b_upper" value="-1"/></ownedEnd>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Association" xmi:id="association_User_VoiceSearchQuery" name="records" memberEnd="association_User_VoiceSearchQuery_a association_User_VoiceSearchQuery_b">
+        <ownedEnd xmi:type="uml:Property" xmi:id="association_User_VoiceSearchQuery_a" type="class_User"><lowerValue xmi:type="uml:LiteralInteger" xmi:id="association_User_VoiceSearchQuery_a_lower" value="0"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="association_User_VoiceSearchQuery_a_upper" value="1"/></ownedEnd>
+        <ownedEnd xmi:type="uml:Property" xmi:id="association_User_VoiceSearchQuery_b" type="class_VoiceSearchQuery"><lowerValue xmi:type="uml:LiteralInteger" xmi:id="association_User_VoiceSearchQuery_b_lower" value="0"/><upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="association_User_VoiceSearchQuery_b_upper" value="-1"/></ownedEnd>
+      </packagedElement>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Package" xmi:id="pkg_api" name="Express Controllers">
+      <packagedElement xmi:type="uml:Class" xmi:id="class_AuthController" name="AuthController">
+        <ownedOperation xmi:id="operation_AuthController_registerUser" name="registerUser"/>
+        <ownedOperation xmi:id="operation_AuthController_loginUser" name="loginUser"/>
+        <ownedOperation xmi:id="operation_AuthController_getCurrentUser" name="getCurrentUser"/>
+        <ownedOperation xmi:id="operation_AuthController_createAdminAccount" name="createAdminAccount"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Class" xmi:id="class_BookController" name="BookController">
+        <ownedOperation xmi:id="operation_BookController_getAllBooks" name="getAllBooks"/>
+        <ownedOperation xmi:id="operation_BookController_getBookById" name="getBookById"/>
+        <ownedOperation xmi:id="operation_BookController_createBook" name="createBook"/>
+        <ownedOperation xmi:id="operation_BookController_updateBook" name="updateBook"/>
+        <ownedOperation xmi:id="operation_BookController_deleteBook" name="deleteBook"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Class" xmi:id="class_CartController" name="CartController">
+        <ownedOperation xmi:id="operation_CartController_getCart" name="getCart"/>
+        <ownedOperation xmi:id="operation_CartController_addToCart" name="addToCart"/>
+        <ownedOperation xmi:id="operation_CartController_updateCartItem" name="updateCartItem"/>
+        <ownedOperation xmi:id="operation_CartController_removeFromCart" name="removeFromCart"/>
+        <ownedOperation xmi:id="operation_CartController_clearCart" name="clearCart"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Class" xmi:id="class_OrderController" name="OrderController">
+        <ownedOperation xmi:id="operation_OrderController_createOrder" name="createOrder"/>
+        <ownedOperation xmi:id="operation_OrderController_getUserOrders" name="getUserOrders"/>
+        <ownedOperation xmi:id="operation_OrderController_getOrderDetails" name="getOrderDetails"/>
+        <ownedOperation xmi:id="operation_OrderController_cancelOrder" name="cancelOrder"/>
+        <ownedOperation xmi:id="operation_OrderController_updateOrderStatus" name="updateOrderStatus"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Class" xmi:id="class_UserController" name="UserController">
+        <ownedOperation xmi:id="operation_UserController_getUserProfile" name="getUserProfile"/>
+        <ownedOperation xmi:id="operation_UserController_updateUserProfile" name="updateUserProfile"/>
+        <ownedOperation xmi:id="operation_UserController_getUserAddresses" name="getUserAddresses"/>
+        <ownedOperation xmi:id="operation_UserController_addAddress" name="addAddress"/>
+        <ownedOperation xmi:id="operation_UserController_getUserWishlist" name="getUserWishlist"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Class" xmi:id="class_SearchController" name="SearchController">
+        <ownedOperation xmi:id="operation_SearchController_searchBooksByImage" name="searchBooksByImage"/>
+        <ownedOperation xmi:id="operation_SearchController_searchBooksByVoice" name="searchBooksByVoice"/>
+        <ownedOperation xmi:id="operation_SearchController_recordSearch" name="recordSearch"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Class" xmi:id="class_AdminController" name="AdminController">
+        <ownedOperation xmi:id="operation_AdminController_getAdminStats" name="getAdminStats"/>
+        <ownedOperation xmi:id="operation_AdminController_getAdminUsers" name="getAdminUsers"/>
+        <ownedOperation xmi:id="operation_AdminController_getAdminOrders" name="getAdminOrders"/>
+        <ownedOperation xmi:id="operation_AdminController_updateOrderStatus" name="updateOrderStatus"/>
+      </packagedElement>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Package" xmi:id="pkg_usecases" name="Current Use Cases">
+      <packagedElement xmi:type="uml:Actor" xmi:id="actor_Guest" name="Guest"/>
+      <packagedElement xmi:type="uml:UseCase" xmi:id="usecase_Browse_catalog" name="Browse catalog"/>
+      <packagedElement xmi:type="uml:Association" xmi:id="association_Guest_Browse_catalog" memberEnd="association_Guest_Browse_catalog_a association_Guest_Browse_catalog_b">
+        <ownedEnd xmi:type="uml:Property" xmi:id="association_Guest_Browse_catalog_a" type="actor_Guest"/>
+        <ownedEnd xmi:type="uml:Property" xmi:id="association_Guest_Browse_catalog_b" type="usecase_Browse_catalog"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:UseCase" xmi:id="usecase_Search_by_image" name="Search by image"/>
+      <packagedElement xmi:type="uml:Association" xmi:id="association_Guest_Search_by_image" memberEnd="association_Guest_Search_by_image_a association_Guest_Search_by_image_b">
+        <ownedEnd xmi:type="uml:Property" xmi:id="association_Guest_Search_by_image_a" type="actor_Guest"/>
+        <ownedEnd xmi:type="uml:Property" xmi:id="association_Guest_Search_by_image_b" type="usecase_Search_by_image"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:UseCase" xmi:id="usecase_Search_by_voice" name="Search by voice"/>
+      <packagedElement xmi:type="uml:Association" xmi:id="association_Guest_Search_by_voice" memberEnd="association_Guest_Search_by_voice_a association_Guest_Search_by_voice_b">
+        <ownedEnd xmi:type="uml:Property" xmi:id="association_Guest_Search_by_voice_a" type="actor_Guest"/>
+        <ownedEnd xmi:type="uml:Property" xmi:id="association_Guest_Search_by_voice_b" type="usecase_Search_by_voice"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:UseCase" xmi:id="usecase_Register_and_sign_in" name="Register and sign in"/>
+      <packagedElement xmi:type="uml:Association" xmi:id="association_Guest_Register_and_sign_in" memberEnd="association_Guest_Register_and_sign_in_a association_Guest_Register_and_sign_in_b">
+        <ownedEnd xmi:type="uml:Property" xmi:id="association_Guest_Register_and_sign_in_a" type="actor_Guest"/>
+        <ownedEnd xmi:type="uml:Property" xmi:id="association_Guest_Register_and_sign_in_b" type="usecase_Register_and_sign_in"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Actor" xmi:id="actor_Buyer" name="Buyer"/>
+      <packagedElement xmi:type="uml:UseCase" xmi:id="usecase_Manage_cart_and_wishlist" name="Manage cart and wishlist"/>
+      <packagedElement xmi:type="uml:Association" xmi:id="association_Buyer_Manage_cart_and_wishlist" memberEnd="association_Buyer_Manage_cart_and_wishlist_a association_Buyer_Manage_cart_and_wishlist_b">
+        <ownedEnd xmi:type="uml:Property" xmi:id="association_Buyer_Manage_cart_and_wishlist_a" type="actor_Buyer"/>
+        <ownedEnd xmi:type="uml:Property" xmi:id="association_Buyer_Manage_cart_and_wishlist_b" type="usecase_Manage_cart_and_wishlist"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:UseCase" xmi:id="usecase_Place_COD_order" name="Place COD order"/>
+      <packagedElement xmi:type="uml:Association" xmi:id="association_Buyer_Place_COD_order" memberEnd="association_Buyer_Place_COD_order_a association_Buyer_Place_COD_order_b">
+        <ownedEnd xmi:type="uml:Property" xmi:id="association_Buyer_Place_COD_order_a" type="actor_Buyer"/>
+        <ownedEnd xmi:type="uml:Property" xmi:id="association_Buyer_Place_COD_order_b" type="usecase_Place_COD_order"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:UseCase" xmi:id="usecase_View_and_cancel_order" name="View and cancel order"/>
+      <packagedElement xmi:type="uml:Association" xmi:id="association_Buyer_View_and_cancel_order" memberEnd="association_Buyer_View_and_cancel_order_a association_Buyer_View_and_cancel_order_b">
+        <ownedEnd xmi:type="uml:Property" xmi:id="association_Buyer_View_and_cancel_order_a" type="actor_Buyer"/>
+        <ownedEnd xmi:type="uml:Property" xmi:id="association_Buyer_View_and_cancel_order_b" type="usecase_View_and_cancel_order"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:UseCase" xmi:id="usecase_Manage_profile_and_addresses" name="Manage profile and addresses"/>
+      <packagedElement xmi:type="uml:Association" xmi:id="association_Buyer_Manage_profile_and_addresses" memberEnd="association_Buyer_Manage_profile_and_addresses_a association_Buyer_Manage_profile_and_addresses_b">
+        <ownedEnd xmi:type="uml:Property" xmi:id="association_Buyer_Manage_profile_and_addresses_a" type="actor_Buyer"/>
+        <ownedEnd xmi:type="uml:Property" xmi:id="association_Buyer_Manage_profile_and_addresses_b" type="usecase_Manage_profile_and_addresses"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Actor" xmi:id="actor_Administrator" name="Administrator"/>
+      <packagedElement xmi:type="uml:UseCase" xmi:id="usecase_Manage_books" name="Manage books"/>
+      <packagedElement xmi:type="uml:Association" xmi:id="association_Administrator_Manage_books" memberEnd="association_Administrator_Manage_books_a association_Administrator_Manage_books_b">
+        <ownedEnd xmi:type="uml:Property" xmi:id="association_Administrator_Manage_books_a" type="actor_Administrator"/>
+        <ownedEnd xmi:type="uml:Property" xmi:id="association_Administrator_Manage_books_b" type="usecase_Manage_books"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:UseCase" xmi:id="usecase_Manage_users" name="Manage users"/>
+      <packagedElement xmi:type="uml:Association" xmi:id="association_Administrator_Manage_users" memberEnd="association_Administrator_Manage_users_a association_Administrator_Manage_users_b">
+        <ownedEnd xmi:type="uml:Property" xmi:id="association_Administrator_Manage_users_a" type="actor_Administrator"/>
+        <ownedEnd xmi:type="uml:Property" xmi:id="association_Administrator_Manage_users_b" type="usecase_Manage_users"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:UseCase" xmi:id="usecase_Manage_recommendations" name="Manage recommendations"/>
+      <packagedElement xmi:type="uml:Association" xmi:id="association_Administrator_Manage_recommendations" memberEnd="association_Administrator_Manage_recommendations_a association_Administrator_Manage_recommendations_b">
+        <ownedEnd xmi:type="uml:Property" xmi:id="association_Administrator_Manage_recommendations_a" type="actor_Administrator"/>
+        <ownedEnd xmi:type="uml:Property" xmi:id="association_Administrator_Manage_recommendations_b" type="usecase_Manage_recommendations"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:UseCase" xmi:id="usecase_Update_order_status" name="Update order status"/>
+      <packagedElement xmi:type="uml:Association" xmi:id="association_Administrator_Update_order_status" memberEnd="association_Administrator_Update_order_status_a association_Administrator_Update_order_status_b">
+        <ownedEnd xmi:type="uml:Property" xmi:id="association_Administrator_Update_order_status_a" type="actor_Administrator"/>
+        <ownedEnd xmi:type="uml:Property" xmi:id="association_Administrator_Update_order_status_b" type="usecase_Update_order_status"/>
+      </packagedElement>
+    </packagedElement>
+  </uml:Model>
+</xmi:XMI>

@@ -3,6 +3,7 @@ import { Book } from "./BookCard";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { Minus, Plus, Trash2, ShoppingBag } from "lucide-react";
 import { formatVND } from "../utils/format";
+import { calculateOrderTotals } from "../../../shared/orderPricing.js";
 
 export interface CartItem extends Book {
   quantity: number;
@@ -21,13 +22,7 @@ export function CartPage({
   onRemoveItem,
   onCheckout,
 }: CartPageProps) {
-  const subtotal = cart.reduce(
-    (total, item) => total + item.price * item.quantity,
-    0,
-  );
-  const tax = subtotal * 0.08; // 8% tax
-  const shipping = cart.length > 0 ? 30000 : 0;
-  const total = subtotal + tax + shipping;
+  const { subtotal, tax, shipping, total } = calculateOrderTotals(cart);
 
   if (cart.length === 0) {
     return (

@@ -66,7 +66,7 @@ class APIClient {
         success: false,
         message:
           error.message ||
-          "Failed to fetch - Check that the backend server is running at http://localhost:5000",
+          `Failed to connect to the API at ${API_BASE_URL}`,
       };
     }
   }

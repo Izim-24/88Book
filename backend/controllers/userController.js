@@ -1,5 +1,13 @@
 import pool from "../config/database.js";
 import bcrypt from "bcryptjs";
+import {
+  cleanText,
+  isUniqueViolation,
+  isValidEmail,
+  normalizeEmail,
+  passwordProblem,
+  toPositiveInt,
+} from "../utils/validation.js";
 
 export const getUserProfile = async (req, res) => {
   try {
@@ -32,7 +40,15 @@ export const getUserProfile = async (req, res) => {
 export const updateUserProfile = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const { fullName, email } = req.body;
+    const fullName = cleanText(req.body?.fullName, 255);
+    const email = req.body?.email == null ? null : normalizeEmail(req.body.email);
+
+    if (fullName === undefined || fullName === "") {
+      return res.status(400).json({ success: false, message: "Full name must be 1-255 characters" });
+    }
+    if (email !== null && !isValidEmail(email)) {
+      return res.status(400).json({ success: false, message: "Invalid email format" });
+    }
 
     // Check if email is already taken (by another user)
     if (email) {
@@ -41,7 +57,7 @@ export const updateUserProfile = async (req, res) => {
         [email, userId],
       );
       if (existingUser.rows.length > 0) {
-        return res.status(400).json({
+        return res.status(409).json({
           success: false,
           message: "Email is already taken",
         });
@@ -53,6 +69,10 @@ export const updateUserProfile = async (req, res) => {
       [fullName, email, userId],
     );
 
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
     res.json({
       success: true,
       message: "Profile updated successfully",
@@ -60,6 +80,9 @@ export const updateUserProfile = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
+    if (isUniqueViolation(error)) {
+      return res.status(409).json({ success: false, message: "Email is already taken" });
+    }
     res.status(500).json({
       success: false,
       message: "Error updating profile",
@@ -70,17 +93,18 @@ export const updateUserProfile = async (req, res) => {
 export const changePassword = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const { currentPassword, newPassword } = req.body;
+    const { currentPassword, newPassword } = req.body || {};
 
-    if (!currentPassword || !newPassword) {
+    if (typeof currentPassword !== "string" || !currentPassword || typeof newPassword !== "string") {
       return res.status(400).json({
         success: false,
         message: "Current password and new password are required",
       });
     }
 
-    if (newPassword.length < 8) {
-      return res.status(400).json({ success: false, message: "New password must be at least 8 characters" });
+    const problem = passwordProblem(newPassword);
+    if (problem) {
+      return res.status(400).json({ success: false, message: `New ${problem.charAt(0).toLowerCase()}${problem.slice(1)}` });
     }
 
     const result = await pool.query(
@@ -98,7 +122,7 @@ export const changePassword = async (req, res) => {
     const storedPassword = result.rows[0].password;
     const validPassword = storedPassword?.startsWith?.("$2")
       ? await bcrypt.compare(currentPassword, storedPassword)
-      : currentPassword === storedPassword;
+      : process.env.NODE_ENV !== "production" && currentPassword === storedPassword;
     if (!validPassword) {
       return res.status(401).json({
         success: false,
@@ -106,7 +130,7 @@ export const changePassword = async (req, res) => {
       });
     }
 
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
     await pool.query(
       "UPDATE users SET password = $1, updated_at = GETDATE() WHERE id = $2",
       [hashedPassword, userId],
@@ -127,9 +151,11 @@ export const changePassword = async (req, res) => {
 
 export const getPublicProfile = async (req, res) => {
   try {
-    const { userId } = req.params;
+    const userId = toPositiveInt(req.params.userId);
+    if (!userId) return res.status(400).json({ success: false, message: "Invalid user ID" });
+    // Public endpoint: never expose email addresses or roles to anonymous callers.
     const result = await pool.query(
-      "SELECT id, full_name, email, role FROM users WHERE id = $1",
+      "SELECT id, full_name FROM users WHERE id = $1",
       [userId],
     );
 
@@ -154,6 +180,29 @@ export const getPublicProfile = async (req, res) => {
 };
 
 // --- Address Management ---
+const ADDRESS_LIMITS = {
+  label: 100, name: 255, street: 1000, city: 100, state: 100, zipCode: 50, country: 100,
+};
+
+const REQUIRED_ADDRESS_FIELDS = new Set(["name", "street", "city", "country"]);
+
+// Returns { values } with trimmed fields, or { error }. With partial=true,
+// omitted fields stay null so the UPDATE keeps their current value.
+const parseAddress = (body = {}, partial = false) => {
+  const values = {};
+  for (const [field, limit] of Object.entries(ADDRESS_LIMITS)) {
+    let value = cleanText(body[field], limit);
+    if (value === undefined) return { error: `${field} is too long or invalid` };
+    if (REQUIRED_ADDRESS_FIELDS.has(field) && (partial ? value === "" : !value)) {
+      return { error: `${field} is required` };
+    }
+    // state and zip_code are NOT NULL columns but optional for Vietnamese addresses.
+    if (!partial && value == null && (field === "state" || field === "zipCode")) value = "";
+    values[field] = value;
+  }
+  values.isDefault = body.isDefault == null ? null : Boolean(body.isDefault);
+  return { values };
+};
 export const getUserAddresses = async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -173,8 +222,9 @@ export const getUserAddresses = async (req, res) => {
 export const addAddress = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const { label, name, street, city, state, zipCode, country, isDefault } =
-      req.body;
+    const parsed = parseAddress(req.body);
+    if (parsed.error) return res.status(400).json({ success: false, message: parsed.error });
+    const { label, name, street, city, state, zipCode, country, isDefault } = parsed.values;
 
     if (isDefault) {
       await pool.query(
@@ -194,7 +244,7 @@ export const addAddress = async (req, res) => {
         state,
         zipCode,
         country,
-        isDefault || 0,
+        isDefault ? 1 : 0,
       ],
     );
     const newAddressId = insertResult.rows[0].id;
@@ -213,9 +263,11 @@ export const addAddress = async (req, res) => {
 export const updateAddress = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const { id } = req.params;
-    const { label, name, street, city, state, zipCode, country, isDefault } =
-      req.body;
+    const id = toPositiveInt(req.params.id);
+    if (!id) return res.status(400).json({ success: false, message: "Invalid address ID" });
+    const parsed = parseAddress(req.body, true);
+    if (parsed.error) return res.status(400).json({ success: false, message: parsed.error });
+    const { label, name, street, city, state, zipCode, country, isDefault } = parsed.values;
 
     if (isDefault) {
       await pool.query(
@@ -234,7 +286,7 @@ export const updateAddress = async (req, res) => {
         state,
         zipCode,
         country,
-        isDefault,
+        isDefault == null ? null : isDefault ? 1 : 0,
         id,
         userId,
       ],
@@ -301,12 +353,17 @@ export const getUserWishlist = async (req, res) => {
 export const addToWishlist = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const { bookId } = req.body;
+    const bookId = toPositiveInt(req.body?.bookId);
 
-    if (!userId || !bookId) {
+    if (!bookId) {
       return res
         .status(400)
-        .json({ success: false, message: "User ID and Book ID are required" });
+        .json({ success: false, message: "A valid book ID is required" });
+    }
+
+    const book = await pool.query("SELECT id FROM books WHERE id = $1", [bookId]);
+    if (book.rows.length === 0) {
+      return res.status(404).json({ success: false, message: "Book not found" });
     }
 
     // Check if already in wishlist
